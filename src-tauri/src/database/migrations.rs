@@ -6,6 +6,7 @@ use super::connection::Database;
 
 const MIGRATION_001: &str = include_str!("migrations/001_initial.sql");
 const MIGRATION_002: &str = include_str!("migrations/002_seed.sql");
+const MIGRATION_003: &str = include_str!("migrations/003_tts_audio.sql");
 
 pub struct Migration {
     pub version: i32,
@@ -24,6 +25,11 @@ pub fn get_migrations() -> Vec<Migration> {
             version: 2,
             name: "002_seed",
             sql: MIGRATION_002,
+        },
+        Migration {
+            version: 3,
+            name: "003_tts_audio",
+            sql: MIGRATION_003,
         },
     ]
 }

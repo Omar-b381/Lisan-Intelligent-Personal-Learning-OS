@@ -7,6 +7,7 @@ pub mod review_repo;
 pub mod session_repo;
 pub mod settings_repo;
 pub mod tag_repo;
+pub mod tts_repo;
 
 pub use analytics_repo::*;
 pub use card_repo::*;
@@ -17,3 +18,4 @@ pub use review_repo::*;
 pub use session_repo::*;
 pub use settings_repo::*;
 pub use tag_repo::*;
+pub use tts_repo::*;

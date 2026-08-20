@@ -46,7 +46,6 @@ impl Database {
     }
 
     /// Create in-memory database for testing
-    #[cfg(test)]
     pub fn in_memory() -> AppResult<Self> {
         let conn = Connection::open_in_memory()?;
         conn.pragma_update(None, "foreign_keys", "ON")?;

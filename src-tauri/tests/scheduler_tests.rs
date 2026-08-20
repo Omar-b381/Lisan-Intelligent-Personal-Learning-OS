@@ -1,6 +1,5 @@
 use lisan_lib::domain::card::{Card, CardState, CardType, Rating};
 use lisan_lib::scheduler::fsrs::FSRSScheduler;
-use lisan_lib::scheduler::models::FSRSParameters;
 use lisan_lib::scheduler::prioritizer::CardPrioritizer;
 use chrono::{Duration, Utc};
 
@@ -75,7 +74,7 @@ fn test_prioritizer_sorting() {
     let prioritizer = CardPrioritizer::new(&scheduler);
     let now = Utc::now();
 
-    let mut new_card = make_test_card();
+    let new_card = make_test_card();
     let mut learning_card = make_test_card();
     learning_card.state = CardState::Learning;
     let mut lapsed_card = make_test_card();

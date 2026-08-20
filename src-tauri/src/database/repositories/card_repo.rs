@@ -251,6 +251,22 @@ impl CardRepository {
         Ok(new_state)
     }
 
+    pub fn get_by_deck(conn: &Connection, deck_id: &str) -> AppResult<Vec<Card>> {
+        let mut stmt = conn.prepare(
+            "SELECT id, deck_id, card_type, front, back, notes, state, stability, difficulty, reps, lapses, review_count, last_review, next_review, interval_days, ease_factor, suspended, buried, created_at, updated_at 
+             FROM cards 
+             WHERE deck_id = ?1 
+             ORDER BY created_at ASC",
+        )?;
+
+        let rows = stmt.query_map(params![deck_id], |row| Self::row_to_card(conn, row))?;
+        let mut cards = Vec::new();
+        for r in rows {
+            cards.push(r?);
+        }
+        Ok(cards)
+    }
+
     pub fn get_due_cards_for_deck(conn: &Connection, deck_id: &str, limit: u32) -> AppResult<Vec<Card>> {
         let now = Utc::now().to_rfc3339();
         let mut stmt = conn.prepare(
