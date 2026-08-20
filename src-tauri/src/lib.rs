@@ -4,6 +4,7 @@ pub mod domain;
 pub mod errors;
 pub mod scheduler;
 pub mod services;
+pub mod tts;
 
 use std::sync::Arc;
 use commands::*;
@@ -27,6 +28,7 @@ pub fn run() {
     let media_service = Arc::new(MediaService::new(db.clone()).expect("Failed to initialize MediaService"));
     let import_export_service = Arc::new(ImportExportService::new(db.clone()));
     let backup_service = Arc::new(BackupService::new(db.clone()).expect("Failed to initialize BackupService"));
+    let tts_service = Arc::new(TtsService::new(db.clone(), media_service.clone()));
 
     let app_state = AppState {
         db,
@@ -38,6 +40,7 @@ pub fn run() {
         media_service,
         import_export_service,
         backup_service,
+        tts_service,
     };
 
     tauri::Builder::default()
@@ -92,6 +95,17 @@ pub fn run() {
             // Settings
             get_app_settings,
             save_app_settings,
+            // Text-to-Speech (TTS)
+            tts_synthesize,
+            tts_get_voices,
+            tts_get_providers,
+            tts_test_provider,
+            tts_get_cache_stats,
+            tts_clear_cache,
+            tts_save_provider_credentials,
+            tts_generate_bulk,
+            tts_get_bulk_progress,
+            tts_cancel_bulk,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Lisan desktop application");

@@ -12,6 +12,7 @@ use crate::domain::settings::AppSettings;
 use crate::domain::tag::TagStats;
 use crate::errors::AppError;
 use crate::services::*;
+use crate::tts::models::*;
 
 pub struct AppState {
     pub db: Database,
@@ -23,6 +24,7 @@ pub struct AppState {
     pub media_service: Arc<MediaService>,
     pub import_export_service: Arc<ImportExportService>,
     pub backup_service: Arc<BackupService>,
+    pub tts_service: Arc<TtsService>,
 }
 
 // ---------------- Decks Commands ----------------
@@ -314,6 +316,77 @@ pub async fn get_app_settings(state: State<'_, AppState>) -> Result<AppSettings,
 pub async fn save_app_settings(state: State<'_, AppState>, settings: AppSettings) -> Result<(), AppError> {
     let conn = state.db.get_connection();
     SettingsRepository::save_app_settings(&conn, &settings)
+}
+
+// ---------------- Text-to-Speech (TTS) Commands ----------------
+
+#[tauri::command]
+pub async fn tts_synthesize(state: State<'_, AppState>, request: TtsRequest) -> Result<TtsResult, AppError> {
+    state.tts_service.synthesize(request)
+}
+
+#[tauri::command]
+pub async fn tts_get_voices(
+    state: State<'_, AppState>,
+    provider: Option<String>,
+    language: Option<String>,
+) -> Result<Vec<Voice>, AppError> {
+    state.tts_service.get_available_voices(provider.as_deref(), language.as_deref())
+}
+
+#[tauri::command]
+pub async fn tts_get_providers(state: State<'_, AppState>) -> Result<Vec<ProviderInfo>, AppError> {
+    state.tts_service.get_providers()
+}
+
+#[tauri::command]
+pub async fn tts_test_provider(
+    state: State<'_, AppState>,
+    provider: String,
+    api_key: Option<String>,
+) -> Result<TtsResult, AppError> {
+    state.tts_service.test_provider(&provider, api_key.as_deref())
+}
+
+#[tauri::command]
+pub async fn tts_get_cache_stats(state: State<'_, AppState>) -> Result<TtsCacheStats, AppError> {
+    state.tts_service.get_cache_stats()
+}
+
+#[tauri::command]
+pub async fn tts_clear_cache(state: State<'_, AppState>, unused_only: Option<bool>) -> Result<usize, AppError> {
+    state.tts_service.clear_cache(unused_only.unwrap_or(false))
+}
+
+#[tauri::command]
+pub async fn tts_save_provider_credentials(
+    state: State<'_, AppState>,
+    provider: String,
+    api_key: String,
+) -> Result<(), AppError> {
+    state.tts_service.save_provider_credentials(&provider, &api_key)
+}
+
+#[tauri::command]
+pub async fn tts_generate_bulk(
+    state: State<'_, AppState>,
+    request: BulkGenerationRequest,
+) -> Result<String, AppError> {
+    state.tts_service.start_bulk_generation(request)
+}
+
+#[tauri::command]
+pub async fn tts_get_bulk_progress(
+    state: State<'_, AppState>,
+    task_id: String,
+) -> Result<Option<BulkGenerationProgress>, AppError> {
+    Ok(state.tts_service.get_bulk_progress(&task_id))
+}
+
+#[tauri::command]
+pub async fn tts_cancel_bulk(state: State<'_, AppState>, task_id: String) -> Result<(), AppError> {
+    state.tts_service.cancel_bulk(&task_id);
+    Ok(())
 }
 
 fn decode_base64(s: &str) -> Result<Vec<u8>, String> {
