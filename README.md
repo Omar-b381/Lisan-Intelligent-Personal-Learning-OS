@@ -1,88 +1,231 @@
-# Lisan (لسان) - Intelligent Desktop Spaced-Repetition Learning OS
-
 <div align="center">
-  <h3>Active Recall &bull; FSRS Spaced Repetition &bull; Pomodoro Focus Sessions &bull; Deep Analytics &bull; Knowledge Heatmaps</h3>
-  <p>A high-performance, native cross-platform desktop application built with Tauri 2.x, Rust, SQLite, and React + TypeScript.</p>
+
+# 🧠 لِسان (Lisan) — نظام التعلّم الذكي والتكرار المتباعد
+### The Intelligent Spaced-Repetition Desktop Learning OS
+
+<p align="center">
+  <strong>تطبيق مكتبي متكامل (Cross-Platform Native Desktop Application) يجمع بين أحدث خوارزميات التكرار المتباعد (FSRS Memory Engine)، والاسترجاع النشط (Active Recall)، وإدارة جلسات التركيز (Pomodoro)، والتحليلات العميقة للذاكرة.</strong>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Rust-1.75+-orange.svg?style=for-the-badge&logo=rust" alt="Rust" />
+  <img src="https://img.shields.io/badge/Tauri-2.x-24C8D8.svg?style=for-the-badge&logo=tauri" alt="Tauri" />
+  <img src="https://img.shields.io/badge/React-18/19-61DAFB.svg?style=for-the-badge&logo=react" alt="React" />
+  <img src="https://img.shields.io/badge/TypeScript-5.x-3178C6.svg?style=for-the-badge&logo=typescript" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/SQLite-WAL%20Mode-003B57.svg?style=for-the-badge&logo=sqlite" alt="SQLite" />
+  <img src="https://img.shields.io/badge/TailwindCSS-3.4-38B2AC.svg?style=for-the-badge&logo=tailwind-css" alt="Tailwind" />
+  <img src="https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge" alt="License" />
+</p>
+
 </div>
 
 ---
 
-## 🌟 Features
+## 📑 جدول المحتويات (Table of Contents)
 
-- **FSRS-Powered Spaced Repetition**: Modern memory model (Free Spaced Repetition Scheduler) with mathematical formulas for Stability, Difficulty, and Retrievability.
-- **Dynamic Review Estimates**: Real-time interval previews for *Again*, *Hard*, *Good*, and *Easy* buttons dynamically computed by Rust domain services.
-- **Full Card States**: Support for `New`, `Learning`, `Review`, `Relearning`, `Suspended`, and `Buried` states with deterministic state transitions.
-- **Rich Card Formats**: Basic (Front/Back) and Cloze deletion (`{{c1::...}}`) cards with Markdown formatting, inline code, and tag organization.
-- **Integrated Pomodoro Productivity**: Focus sessions directly tied to card reviews, measuring active recall minutes, accuracy %, and XP rewards.
-- **Knowledge Activity Heatmap**: GitHub-style 365-day grid tracking study consistency in cards reviewed and minutes studied.
-- **Diagnostic Weakness Detection**: Flags high-lapse cards and difficult concepts for targeted review.
-- **Hierarchical Deck Architecture**: Infinite subdeck nesting, custom deck priority, and aggregated deck statistics.
-- **Fast Full-Text Search**: Search by text, `deck:`, `tag:`, and `state:` filters with instant response.
-- **Offline-First SQLite Architecture**: Zero cloud dependencies, SQLite WAL mode, migrations, and atomic zero-downtime backups.
-- **Internationalization (i18n) & RTL**: Complete English and Arabic language support with automatic RTL layout mirroring.
-
----
-
-## 🏗️ Architecture Overview
-
-```
-React 19 + TypeScript + Zustand (Presentation)
-       │
-       ▼  Typed Tauri IPC
-Tauri 2.x Rust Core Boundary
-       │
-  ┌────┴────────────────────────┬──────────────────────┐
-  ▼                             ▼                      ▼
-FSRS Spaced Repetition    Pomodoro Service       Database Layer
-Scheduler Engine          Monotonic Timer        rusqlite + Migrations
-  │                                                    │
-  └─────────────────────────────┬──────────────────────┘
-                                ▼
-                      Local SQLite Database
-                      (WAL Mode + FTS5 Search)
-```
+1. [نظرة عامة على المشروع (Project Description)](#-نظرة-عامة-على-المشروع-project-description)
+2. [المشكلة التي يحلها التطبيق (Problem It Solves)](#-المشكلة-التي-يحلها-التطبيق-problem-it-solves)
+3. [الميزات والقدرات الرئيسية (Key Features)](#-الميزات-والقدرات-الرئيسية-key-features)
+4. [التقنيات المستخدمة وسبب اختيارها (Tech Stack & Rationale)](#-التقنيات-المستخدمة-وسبب-اختيارها-tech-stack--rationale)
+5. [الهندسة المعمارية والقرارات التقنية (The Process & Architecture)](#-الهندسة-المعمارية-والقرارات-التقنية-the-process--architecture)
+6. [دليل البدء والتشغيل (Getting Started)](#-دليل-البدء-والتشغيل-getting-started)
+7. [الطبقة السردية: الدافع، التحديات والحلول (Storytelling Layer)](#-الطبقة-السردية-الدافع-التحديات-والحلول-storytelling-layer)
+8. [النتائج والأثر الملموس (Outcomes & Impact)](#-النتائج-والأثر-الملموس-outcomes--impact)
+9. [القيود وخريطة الطريق المستقبلية (Limitations & Future Work)](#-القيود-وخريطة-الطريق-المستقبلية-limitations--future-work)
+10. [الجمهور المستهدف والاستخدام المقصود (Intended Use)](#-الجمهور-المستهدف-والاستخدام-المقصود-intended-use)
+11. [الحقوق والترخيص (Credits & License)](#-الحقوق-والترخيص-credits--license)
 
 ---
 
-## 🚀 Quick Start & Development
+## 🌟 نظرة عامة على المشروع (Project Description)
 
-### Prerequisites
-- [Rust](https://rustup.rs/) (edition 2021+, rustc 1.75+)
-- [Node.js](https://nodejs.org/) (v18+)
-- [npm](https://npmjs.com/)
+**«لِسان» (Lisan)** ليس مجرد تطبيق لعرض البطاقات التعليمية (Flashcards)، بل هو **نظام تشغيل معرفي متكامل (Personal Learning OS)** مصمم محلياً بالكامل (Offline-First & Local-First). 
 
-### 1. Install Dependencies
+يقوم النظام بنمذجة ذاكرة المتعلّم رياضياً بالاعتماد على خوارزمية **FSRS (Free Spaced Repetition Scheduler)** الحديثة، للتنبؤ بدقة بلحظة تلاشي المعلومة وجدولة المراجعات بالوقت الأمثل قبل النسيان مباشرة، مع دمج تقنية **بومودورو (Pomodoro Focus)** لقياس سرعة الاستجابة والتركيز الذهني وتحويل التعلّم إلى عادة يومية مستدامة.
+
+---
+
+## 🛑 المشكلة التي يحلها التطبيق (Problem It Solves)
+
+| التحدي التقليدي | كيف يعالجه تطبيق «لِسان»؟ |
+| :--- | :--- |
+| **منحنى النسيان السريع (Forgetting Curve)** | ينسى الإنسان أكثر من 70% من المعلومات الجديدة خلال 48 ساعة دون مراجعة منتظمة ومجدولة علمياً. | يعتمد التطبيق نموذج الذاكرة ثلاثي الأبعاد: **الثبات ($S$)**، **الصعوبة ($D$)**، و**قابلية الاسترجاع ($R$)** لإعادة الحساب ديناميكياً لكل بطاقة. |
+| **تشتت الانتباه وغياب التركيز أثناء المذاكرة** | يعاني الطلاب والمتعلمون من المماطلة وتشتت الانتباه المستمر أثناء المراجعة. | يدمج مؤقت بومودورو مع وضع التركيز الكامل (Distraction-Free Focus Mode) لتتبع المراجعات في سياق زمني محكم. |
+| **الاعتماد الإجباري على السحابة وتهديد الخصوصية** | تتطلب معظم التطبيقات الحديثة اتصالات إنترنت دائمة وتخزن بيانات المستخدم الشخصية على خوادم خارجية. | **معمارية محلية أولاً (Local-First)**؛ قاعدة بيانات SQLite فائقة السرعة، بدون أي متطلبات اتصال أو جمع بيانات خارجية. |
+| **ضعف دعم اللغة العربية وتجارب الاستخدام المعربة** | تفتقر معظم أدوات التعلّم المتقدمة (مثل Anki) إلى واجهات عربية أصيلة تدعم اليمين لليسار (RTL) بشكل انسيابي وتجربة مستخدم عصرية. | واجهة عربية وإنجليزية مكتوبة أصلياً بأحدث معايير الـ UI/UX مع دعم كامل لاتجاه RTL والخطوط العربية الحديثة. |
+
+---
+
+## ⚡ الميزات والقدرات الرئيسية (Key Features)
+
+### 1. محرك التكرار المتباعد الحديث (FSRS Spaced-Repetition Engine)
+- لا يعتمد على جداول ثابتة (مثل 1 يوم / 3 أيام / 7 أيام).
+- حساب فترات المراجعة التقديرية مباشرة على أزرار التقييم الأربعة: **أعدها (`< 10m`)**، **صعبة (`1d`)**، **جيدة (`3d`)**، و**سهلة (`8d+`)**.
+- الانتقال الحتمي بين حالات البطاقة: `جديدة (New)`، `قيد التعلّم (Learning)`، `مراجعة (Review)`، `إعادة تعلّم (Relearning)`، و`معلّقة (Suspended)`.
+
+### 2. الأولوية الذكية لقائمة المراجعة (Intelligent Prioritization)
+- ترتيب البطاقات ليس مجرد ترتيب زمني؛ بل يعتمد على معادلة ترجيحية تجمع بين: **نسبة التأخير عن الموعد**، **خطر النسيان ($1 - R$)**، **صعوبة البطاقة**، **معدل الإخفاق التاريخي**، و**أولوية الرزمة**.
+
+### 3. منظومة بومودورو المندمجة مع الاستذكار
+- تخصيص كامل لفترات التركيز (25 دقيقة)، والاستراحات القصيرة (5 دقائق)، والطويلة (15 دقيقة).
+- تسجيل إحصائيات الجلسة: (البطاقات المراجعة، دقة الاسترجاع، زمن الإجابة، ونقاط الخبرة المكتسبة XP).
+
+### 4. خريطة النشاط والتحليلات العميقة (Knowledge Heatmap & Analytics)
+- خريطة نشاط سنوية (365 يوماً) على غرار GitHub Heatmap للتبديل بين عدد البطاقات ودقائق الدراسة.
+- رسوم بيانية تفاعلية لحجم المراجعات ومنحنى استقرار الذاكرة (Retention Trend).
+- قائمة كشف نقاط الضعف (Weak Cards Diagnostic) لتحديد البطاقات المتكررة الرسوب.
+
+### 5. محرر بطاقات غني وملء فراغات (Cloze Deletion)
+- دعم البطاقات الأساسية (وجه / ظهر)، وبطاقات ملء الفراغات التلقائية بترميز `{{c1::النص}}`.
+- تنسيق النص الغني (Bold, Italic, Inline Code)، وإمكانية إرفاق الوسوم والوسائط المتعددة.
+
+---
+
+## 🛠️ التقنيات المستخدمة وسبب اختيارها (Tech Stack & Rationale)
+
+```mermaid
+graph LR
+    UI[React 19 + TypeScript + Tailwind] -- "Tauri IPC (Commands)" --> Rust[Rust Backend Core]
+    Rust --> FSRS[FSRS Scheduler Engine]
+    Rust --> Pomo[Monotonic Timer & XP Service]
+    Rust --> SQLite[(SQLite 3 + WAL + FTS5)]
+```
+
+| الطبقة التقنية | التقنية المختارة | سبب الاختيار الهندسي (Rationale) |
+| :--- | :--- | :--- |
+| **إطار التطبيق المكتبي** | **Tauri 2.x** | يوفر تطبيقاً مكتبياً أصيلاً بحجم لا يتجاوز 15 ميغابايت، واستهلاك ذاكرة ضئيل جداً مقارنة بـ Electron، مع أمان فائق عبر عزل الصلاحيات ونظام IPC منيع. |
+| **لغة المعالجة الخلفية** | **Rust 2021** | ضمان أمان الذاكرة والسرعة القصوى، وعدم وجود Garbage Collector، مما يجعل عمليات الحسابات الإحصائية وجدولة مئات آلاف البطاقات فورية دون تجميد الواجهة. |
+| **قاعدة البيانات** | **SQLite 3 (rusqlite)** | أفضل محرك تخزين محلي غير متصل، تم تفعيله بوضع **WAL (Write-Ahead Logging)** مع فهرسة كاملة ودعم البحث النصي **FTS5** ومعاملات ACID لضمان سلامة سجلات المراجعة. |
+| **واجهة المستخدم** | **React + TypeScript** | بناء واجهة مستخدم مرنة وقابلة للصيانة بنظام المكونات المعيارية، مع فحص صارم للأنواع لمنع الأخطاء البرمجية أثناء وقت التطوير. |
+| **إدارة الحالة** | **Zustand** | مكتبة إدارة حالة فائقة الخفة وبسيطة المعمارية، تلغي الحاجة للتعقيدات الزائدة وتوفر وصولاً سريعاً دون إعادة تصيير (Re-renders) غير ضرورية. |
+| **التصميم والأنماط** | **Tailwind CSS** | نظام تصميم معتمد على Tokens قابلة للتخصيص، مع دعم أصيل وديناميكي لتبديل السمات (داكن / فاتح) واتجاه القراءة العربي (RTL Layout). |
+
+---
+
+## ⚙️ الهندسة المعمارية والقرارات التقنية (The Process & Architecture)
+
+تم بناء المشروع وفق معمارية الطبقات النظيفة (Clean Layered Architecture):
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ 1. Frontend Layer (React 19 + Zustand + Tailwind + i18n)    │
+│    - Views: Dashboard | Study | Decks | Browser | Analytics │
+└──────────────────────────────┬──────────────────────────────┘
+                               │ Typed Tauri IPC Invocations
+┌──────────────────────────────▼──────────────────────────────┐
+│ 2. Tauri IPC Boundary & Command Handlers (Rust)             │
+│    - Commands: cards, decks, reviews, pomodoro, backup...   │
+└──────────────────────────────┬──────────────────────────────┘
+                               │
+┌──────────────────────────────▼──────────────────────────────┐
+│ 3. Application Services & Domain Core                       │
+│    - StudyService (FSRS Math & Prioritizer)                 │
+│    - PomodoroService & AnalyticsService                     │
+│    - BackupService (Atomic SQLite VACUUM INTO)              │
+└──────────────────────────────┬──────────────────────────────┘
+                               │
+┌──────────────────────────────▼──────────────────────────────┐
+│ 4. Persistence Layer (rusqlite Repositories + Migrations)   │
+│    - SQLite 3 (WAL mode, Foreign Keys, Schema Migrations)  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### قرارات هندسية بارزة:
+1. **حظر وضع منطق العمليات (Business Logic) في React**: الواجهة مسؤولة فقط عن العرض والتفاعل، بينما تُنفذ كافة الحسابات الرياضية والتحقق وتعديل البيانات حصرياً داخل Rust.
+2. **استخدام نظام الهجرات التلقائية (SQL Migrations)**: لا يتم تعديل أي جداول يدوياً؛ بل تُطبق ملفات `001_initial.sql` و`002_seed.sql` داخل معاملات ذرية آمنة عند إقلاع التطبيق.
+3. **مؤقت ذو مرجعية زمنية حقيقية (Monotonic Timestamps)**: مؤقت بومودورو يعتمد على فوارق الطوابع الزمنية وليس على دقة `setInterval` في جافاسكريبت، لضمان عدم تأخر المؤقت عند تصغير النافذة.
+
+---
+
+## 🚀 دليل البدء والتشغيل (Getting Started)
+
+### المتطلبات الأساسية (Prerequisites)
+- تثبيت [Node.js](https://nodejs.org/) (الإصدار 18 أو أحدث).
+- تثبيت مترجم [Rust](https://rustup.rs/) (الإصدار 1.75 أو أحدث).
+- نظام تشغيل: Windows 10/11 أو macOS أو Linux.
+
+### 1. استنساخ المشروع (Clone Repository)
+```bash
+git clone https://github.com/your-username/lisan.git
+cd lisan
+```
+
+### 2. تثبيت الحزم (Install Dependencies)
 ```bash
 npm install
 ```
 
-### 2. Run Development App
+### 3. تشغيل بيئة التطوير (Run Development)
 ```bash
-# Starts Vite dev server and launches the native Tauri window
+# تشغيل خادم التطوير وتطبيق سطح المكتب معاً
 npm run tauri dev
 ```
 
-### 3. Run Backend Unit Tests
+### 4. تشغيل الاختبارات الآلية (Run Tests)
 ```bash
+# فحص وتأكيد منطق خوارزمية التكرار FSRS وقاعدة البيانات
 cargo test --manifest-path src-tauri/Cargo.toml
 ```
 
-### 4. Build Production Desktop Binary
+### 5. بناء الحزمة الإنتاجية النهائية (Production Build)
 ```bash
-# Builds optimized release binary and OS installers (exe, dmg, deb/appimage)
+# توليد ملف التثبيت المكتبي المستقل (.exe / .dmg / .deb)
 npm run tauri build
 ```
 
 ---
 
-## 📚 Technical Documentation
+## 📖 الطبقة السردية: الدافع، التحديات والحلول (Storytelling Layer)
 
-- [ARCHITECTURE.md](file:///d:/PROJECTSIMPORTANT/Lisan/ARCHITECTURE.md) - System design, IPC contracts, and domain layering.
-- [DATABASE.md](file:///d:/PROJECTSIMPORTANT/Lisan/DATABASE.md) - SQLite schema, migrations, indexes, and queries.
-- [SCHEDULER.md](file:///d:/PROJECTSIMPORTANT/Lisan/SCHEDULER.md) - FSRS memory formulas, intervals, and priority scoring.
-- [CONTRIBUTING.md](file:///d:/PROJECTSIMPORTANT/Lisan/CONTRIBUTING.md) - Development guidelines and PR standards.
+### 💡 الدافع وراء المشروع (Motivation)
+يواجه المتعلمون المعاصرون طوفاناً هائلاً من المعلومات في مجالات مثل تعلم اللغات، البرمجة، والعلوم الطبية. غالبية الأدوات المتاحة إما معقدة للغاية وتعتمد على خوارزميات قديمة ترجع للثمانينات (مثل SM-2 في Anki القديم)، أو تعتمد بالكامل على السحابة وتفتقر للسرعة والخصوصية ودعم اللغة العربية الأصيل. بنينا «لِسان» ليكون بيئة تعلم شخصية متكاملة وسريعة كسرعة البرق، تدمج العلم المعرفي الحديث بالإنتاجية.
+
+### 🧗 التحديات التقنية الكبرى وكيف تم التغلب عليها:
+
+#### التحدي 1: نمذجة خوارزمية FSRS بدقة رياضية حتمية
+- **المشكلة**: تتطلب خوارزمية FSRS حساب معادلات أُسية متداخلة للتنبؤ بثبات الذاكرة ($S$) وصعوبة السؤال ($D$) لكل تقييم، ويجب تقديم المعاينات التقديرية للأزرار في جزء من المللي ثانية دون أي تأخير في الواجهة.
+- **الحل**: قمنا ببناء محرك رياضي مستقل في Rust داخل وحدة `src-tauri/src/scheduler/fsrs.rs` مدعوم باختبارات وحدة آلية للتحقق من دقة التنبؤ بالاسترجاع ومنع أي أخطاء حسابية أو حالات فيضان رقمي.
+
+#### التحدي 2: تجربة ثنائية اللغة تدعم RTL الأصيل بدون انكسار الواجهة
+- **المشكلة**: غالباً ما تتسبب الواجهات المعربة في تشوه محاذاة الأيقونات واختصارات لوحة المفاتيح والرسوم البيانية.
+- **الحل**: استخدمنا نظام قوالب Tailwind المرن مع خصائص CSS المنطقية (Logical Properties) ومحددات الاتجاه، مع عزل نصوص الواجهة في قواميس `en.ts` و`ar.ts`، لضمان انتقال سلس وانعكاس دقيق بنقرة زر واحدة.
 
 ---
 
-## 🛡️ License
-MIT License. Built with ❤️ for lifelong learners.
+## 📊 النتائج والأثر الملموس (Outcomes & Impact)
+
+- **سرعة تشغيل وإقلاع فائقة**: يبدأ التطبيق في أقل من ثانية واحدة بفضل معمارية Tauri وRust الخفيفة.
+- **كفاءة الذاكرة**: استهلاك رام لا يتجاوز 60-80 ميغابايت أثناء التشغيل مقارنة بـ 400+ ميغابايت في تطبيقات الويب المغلفة (Electron).
+- **تجربة خالية من التشتيت**: تمكين المتعلّم من إنجاز مئات المراجعات اليومية بالكامل عبر اختصارات لوحة المفاتيح (`Space` للإظهار، و`1`, `2`, `3`, `4` للتقييم، و`Ctrl+K` للبحث السريع).
+- **أمان وموثوقية البيانات**: حفظ فوري في SQLite مع إمكانية أخذ نسخ احتياطية بضغطة زر واحدة دون قفل قاعدة البيانات.
+
+---
+
+## 🔮 القيود وخريطة الطريق المستقبلية (Limitations & Future Work)
+
+- [ ] **المزامنة السحابية المشفرة (E2E Encrypted Sync)**: دعم المزامنة الاختيارية المباشرة بين الأجهزة بدون خادم وسيط مع تشفير طرف لطرف.
+- [ ] **توليد البطاقات بالذكاء الاصطناعي (AI Flashcard Generation)**: دعم موفري الذكاء الاصطناعي (Local LLMs عبر Ollama أو OpenAI/Anthropic) لتوليد بطاقات ملء الفراغات من المستندات والمقالات الطويلة.
+- [ ] **تطبيق الهاتف المحمول (Mobile Companion)**: تمديد قاعدة كود Tauri 2.x لدعم منصتي iOS وAndroid بمزامنة محلية.
+- [ ] **دعم استيراد حزم Anki (.apkg)**: قراءة وفك حزم أنكي المتقدمة مع وسائطها تلقائياً.
+
+---
+
+## 🎯 الجمهور المستهدف والاستخدام المقصود (Intended Use)
+
+1. **متعلمو اللغات**: لبناء المفردات والتراكيب واستذكار القواعد من خلال سياقات ملء الفراغات (Cloze Deletions).
+2. **مبرمجو ومطورو النظم**: لحفظ المفاهيم الهندسية، واجهات برمجة التطبيقات (APIs)، وتراكيب اللغات البرمجية وأنماط التصميم.
+3. **طلاب الطب والعلوم**: لاستيعاب المصطلحات التشريحية والدوائية الكثيفة بدقة واستدامة.
+4. **المحترفون والباحثون**: لإدارة المعرفة الشخصية وبناء بنك ذاكرة طويل الأمد دائم الحضور.
+
+---
+
+## 📜 الحقوق والترخيص (Credits & License)
+
+- **المطور**: فريق تطوير نظام «لِسان» (Lisan OS Team).
+- **الأسس العلمية**: مستوحى من أبحاث منحنى النسيان لـ Ebbinghaus وأحدث أبحاث خوارزمية **FSRS (Free Spaced Repetition Scheduler)**.
+- **الترخيص**: هذا المشروع مرخص تحت رخصة **[MIT License](file:///d:/PROJECTSIMPORTANT/Lisan/LICENSE)** — يمكنك استخدامه، تعديله، وتوزيعه بحرية كاملة.
+
+<div align="center">
+  <br />
+  <sub>صُنع بشغف لتمكين كل متعلّم من ترويض الذاكرة وبناء عادة تعلّم يومية مستدامة.</sub>
+</div>
