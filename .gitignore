@@ -11,6 +11,7 @@ Cargo.lock
 
 # Tauri artifacts
 src-tauri/.tauri/
+src-tauri/gen/
 
 # Local databases, media vaults & backups
 *.db
