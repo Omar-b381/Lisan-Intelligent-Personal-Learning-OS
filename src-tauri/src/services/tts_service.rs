@@ -245,6 +245,24 @@ impl TtsService {
         TtsRepository::save_provider_credentials(&conn, provider, api_key)
     }
 
+    pub fn verify_elevenlabs_account(&self, api_key: Option<&str>) -> AppResult<crate::tts::models::ElevenLabsAccountInfo> {
+        let key = if let Some(k) = api_key {
+            if !k.trim().is_empty() {
+                k.trim().to_string()
+            } else {
+                let conn = self.db.get_connection();
+                TtsRepository::get_provider_credentials(&conn, "elevenlabs")?
+                    .ok_or_else(|| AppError::Validation("No ElevenLabs API key provided or configured".to_string()))?
+            }
+        } else {
+            let conn = self.db.get_connection();
+            TtsRepository::get_provider_credentials(&conn, "elevenlabs")?
+                .ok_or_else(|| AppError::Validation("No ElevenLabs API key provided or configured".to_string()))?
+        };
+
+        crate::tts::ElevenLabsProvider::verify_key(&key)
+    }
+
     pub fn start_bulk_generation(
         self: &Arc<Self>,
         request: BulkGenerationRequest,

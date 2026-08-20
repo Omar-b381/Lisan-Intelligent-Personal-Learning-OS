@@ -103,6 +103,7 @@ pub fn run() {
             tts_get_cache_stats,
             tts_clear_cache,
             tts_save_provider_credentials,
+            tts_verify_elevenlabs_account,
             tts_generate_bulk,
             tts_get_bulk_progress,
             tts_cancel_bulk,

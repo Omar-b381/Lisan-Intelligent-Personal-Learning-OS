@@ -80,3 +80,10 @@ export interface AudioPlayOptions {
   onEnd?: () => void;
   onError?: (err: string) => void;
 }
+
+export interface ElevenLabsAccountInfo {
+  tier: string;
+  character_count: number;
+  character_limit: number;
+  status: string;
+}

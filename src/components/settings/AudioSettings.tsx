@@ -12,6 +12,7 @@ import {
   Mic,
   Cloud,
   Check,
+  AlertTriangle,
 } from 'lucide-react';
 import { useTtsStore } from '../../stores/ttsStore';
 import { useAppStore } from '../../stores/appStore';
@@ -44,16 +45,51 @@ export const AudioSettings: React.FC = () => {
   const [isTesting, setIsTesting] = useState(false);
   const [testSuccess, setTestSuccess] = useState(false);
   const [isSavingKey, setIsSavingKey] = useState(false);
+  const [accountInfo, setAccountInfo] = useState<import('../../types/tts').ElevenLabsAccountInfo | null>(null);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [verifyError, setVerifyError] = useState<string | null>(null);
 
   useEffect(() => {
     loadProviders();
     loadCacheStats();
   }, []);
 
+  const handleVerifyAccount = async (overrideKey?: string) => {
+    const keyToTest =
+      overrideKey ||
+      apiKey.trim() ||
+      localStorage.getItem('lisan_tts_apikey_elevenlabs') ||
+      '';
+    if (!keyToTest) {
+      showToast(
+        language === 'ar' ? 'يرجى إدخال مفتاح الـ API أولاً' : 'Please enter an API key first'
+      );
+      return;
+    }
+    setIsVerifying(true);
+    setVerifyError(null);
+    try {
+      const info = await ttsApi.verifyElevenLabsAccount(keyToTest);
+      setAccountInfo(info);
+      showToast(
+        language === 'ar'
+          ? 'تم التحقق من الحساب والرصيد بنجاح!'
+          : 'Account verified successfully!'
+      );
+    } catch (e: any) {
+      console.error('Account verification failed:', e);
+      const msg = e?.message || (typeof e === 'string' ? e : 'Unknown verification error');
+      setVerifyError(msg);
+      showToast(`فشل التحقق: ${msg}`);
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
   const handleSaveKey = async (providerId: string) => {
     if (!apiKey.trim()) return;
     setIsSavingKey(true);
-    const keyToSave = apiKey.trim();
+    const keyToSave = apiKey.trim().replace(/^["']|["']$/g, '').replace(/^xi-api-key:\s*/i, '');
     try {
       await ttsApi.saveProviderCredentials(providerId, keyToSave);
       localStorage.setItem(`lisan_tts_apikey_${providerId}`, keyToSave);
@@ -65,6 +101,10 @@ export const AudioSettings: React.FC = () => {
           : 'API Key saved & provider activated successfully!'
       );
       setApiKey('');
+      // Auto verify account if ElevenLabs
+      if (providerId === 'elevenlabs') {
+        handleVerifyAccount(keyToSave);
+      }
       // Immediate audio playback verification
       handleTestVoice(providerId, keyToSave);
     } catch (e: any) {
@@ -365,14 +405,14 @@ export const AudioSettings: React.FC = () => {
               </Button>
             </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-              <div>
+            <div className="flex flex-wrap items-center justify-between gap-2 text-xs pt-1">
+              <div className="flex items-center gap-3">
                 {elevenInfo?.is_configured ? (
                   <span className="text-emerald-500 flex items-center gap-1.5 font-semibold">
                     <CheckCircle className="w-4 h-4" />
                     <span>
                       {language === 'ar'
-                        ? 'مفتاح ElevenLabs محفوظ ومفعّل بنجاح'
+                        ? 'مفتاح ElevenLabs محفوظ ومفعّل'
                         : 'ElevenLabs Key is active & ready'}
                     </span>
                   </span>
@@ -383,6 +423,26 @@ export const AudioSettings: React.FC = () => {
                       : 'Paste your API key and click Save & Activate'}
                   </span>
                 )}
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="text-purple-600 border-purple-500/30 hover:bg-purple-50 dark:hover:bg-purple-950/40 text-[11px]"
+                  onClick={() => handleVerifyAccount()}
+                  disabled={isVerifying}
+                >
+                  <Sparkles className="w-3.5 h-3.5 mr-1" />
+                  <span>
+                    {isVerifying
+                      ? language === 'ar'
+                        ? 'جاري فحص الحساب...'
+                        : 'Checking Account...'
+                      : language === 'ar'
+                      ? 'فحص الحساب والرصيد'
+                      : 'Verify & Check Quota'}
+                  </span>
+                </Button>
               </div>
 
               <button
@@ -395,6 +455,51 @@ export const AudioSettings: React.FC = () => {
                 <span>{isTesting ? (language === 'ar' ? 'جاري النطق...' : 'Testing...') : (language === 'ar' ? 'اختبار النطق الصوتي الآن' : 'Test Speech Now')}</span>
               </button>
             </div>
+
+            {/* Live Account Info Badge */}
+            {accountInfo && (
+              <div className="p-3.5 rounded-2xl bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800/60 text-xs space-y-2 animate-fade-in">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="font-bold text-slate-800 dark:text-slate-100">
+                      {language === 'ar' ? 'حالة الحساب:' : 'Account Status:'}
+                    </span>
+                    <span className="px-2 py-0.5 rounded-md font-semibold bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 uppercase text-[10px]">
+                      {accountInfo.status} ({accountInfo.tier})
+                    </span>
+                  </div>
+
+                  <div className="font-mono text-slate-600 dark:text-slate-300 font-semibold">
+                    {language === 'ar' ? 'الرصيد المتبقي:' : 'Characters Left:'}{' '}
+                    <span className="text-purple-600 dark:text-purple-400 font-bold">
+                      {(accountInfo.character_limit - accountInfo.character_count).toLocaleString()}
+                    </span>{' '}
+                    / {accountInfo.character_limit.toLocaleString()}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Verification Error Box */}
+            {verifyError && (
+              <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/60 text-xs space-y-1.5 text-rose-700 dark:text-rose-300 animate-fade-in">
+                <div className="flex items-center gap-1.5 font-bold">
+                  <AlertTriangle className="w-4 h-4 text-rose-600" />
+                  <span>{language === 'ar' ? 'تعذر التحقق من المفتاح من خوادم ElevenLabs:' : 'ElevenLabs Verification Error:'}</span>
+                </div>
+                <p className="font-mono text-[11px] bg-rose-100/70 dark:bg-rose-900/40 p-2 rounded-lg break-all">
+                  {verifyError}
+                </p>
+                <div className="text-[11px] text-slate-600 dark:text-slate-300 pt-1 space-y-1">
+                  <p>💡 {language === 'ar' ? 'خطوات التحقق السريع:' : 'Quick verification checklist:'}</p>
+                  <ul className="list-disc list-inside pl-1 space-y-0.5 text-slate-500 dark:text-slate-400">
+                    <li>{language === 'ar' ? 'تأكد من تأكيد بريدك الإلكتروني (Verify Email) في موقع ElevenLabs.' : 'Make sure you confirmed your email on ElevenLabs.io.'}</li>
+                    <li>{language === 'ar' ? 'تأكد من نسخ المفتاح كاملاً من Settings > API Keys.' : 'Make sure the API Key is copied from Settings > API Keys.'}</li>
+                  </ul>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

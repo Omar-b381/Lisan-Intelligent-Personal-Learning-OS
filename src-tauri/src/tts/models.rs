@@ -126,3 +126,11 @@ pub struct TtsAudioRecord {
     pub last_used_at: String,
     pub created_at: String,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ElevenLabsAccountInfo {
+    pub tier: String,
+    pub character_count: u64,
+    pub character_limit: u64,
+    pub status: String,
+}

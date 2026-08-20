@@ -368,6 +368,14 @@ pub async fn tts_save_provider_credentials(
 }
 
 #[tauri::command]
+pub async fn tts_verify_elevenlabs_account(
+    state: State<'_, AppState>,
+    api_key: Option<String>,
+) -> Result<crate::tts::models::ElevenLabsAccountInfo, AppError> {
+    state.tts_service.verify_elevenlabs_account(api_key.as_deref())
+}
+
+#[tauri::command]
 pub async fn tts_generate_bulk(
     state: State<'_, AppState>,
     request: BulkGenerationRequest,

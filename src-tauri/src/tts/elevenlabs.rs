@@ -3,7 +3,7 @@ use serde_json::json;
 use std::time::Duration;
 
 use crate::errors::{AppError, AppResult};
-use super::models::{Language, TtsRequest, Voice};
+use super::models::{ElevenLabsAccountInfo, Language, TtsRequest, Voice};
 use super::provider::{SynthesizedAudio, TtsProvider};
 
 pub struct ElevenLabsProvider {
@@ -22,6 +22,40 @@ impl ElevenLabsProvider {
 
     pub fn set_api_key(&mut self, api_key: Option<String>) {
         self.api_key = api_key;
+    }
+
+    pub fn verify_key(key: &str) -> AppResult<ElevenLabsAccountInfo> {
+        let client = Client::builder()
+            .timeout(Duration::from_secs(12))
+            .build()
+            .unwrap_or_else(|_| Client::new());
+
+        let clean_key = key.trim().trim_matches('"').trim_matches('\'');
+        let resp = client.get("https://api.elevenlabs.io/v1/user/subscription")
+            .header("xi-api-key", clean_key)
+            .send()
+            .map_err(|e| AppError::Internal(format!("Network connection error: {}", e)))?;
+
+        if !resp.status().is_success() {
+            let status = resp.status();
+            let err_text = resp.text().unwrap_or_default();
+            return Err(AppError::Internal(format!("ElevenLabs Verification Error (HTTP {}): {}", status, err_text)));
+        }
+
+        let json: serde_json::Value = resp.json()
+            .map_err(|e| AppError::Internal(format!("Failed to parse response: {}", e)))?;
+
+        let tier = json["tier"].as_str().unwrap_or("free").to_string();
+        let character_count = json["character_count"].as_u64().unwrap_or(0);
+        let character_limit = json["character_limit"].as_u64().unwrap_or(10000);
+        let status = json["status"].as_str().unwrap_or("active").to_string();
+
+        Ok(ElevenLabsAccountInfo {
+            tier,
+            character_count,
+            character_limit,
+            status,
+        })
     }
 }
 

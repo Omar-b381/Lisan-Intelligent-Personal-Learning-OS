@@ -7,6 +7,7 @@ import {
   TtsCacheStats,
   BulkGenerationRequest,
   BulkGenerationProgress,
+  ElevenLabsAccountInfo,
 } from '../types/tts';
 
 async function callTtsTauri<T>(cmd: string, args?: Record<string, unknown>, fallback?: T): Promise<T> {
@@ -221,6 +222,38 @@ async function handleWebPreviewTts<T>(cmd: string, args?: any): Promise<T> {
       } as unknown as T;
     }
 
+    case 'tts_verify_elevenlabs_account': {
+      const storedKey = (args?.apiKey || localStorage.getItem('lisan_tts_apikey_elevenlabs') || '').trim();
+      if (!storedKey) {
+        throw new Error('Please enter an ElevenLabs API key first.');
+      }
+      try {
+        const res = await fetch('https://api.elevenlabs.io/v1/user/subscription', {
+          headers: { 'xi-api-key': storedKey },
+        });
+        if (!res.ok) {
+          const errText = await res.text();
+          let parsed = errText;
+          try {
+            const j = JSON.parse(errText);
+            if (j.detail?.message) parsed = j.detail.message;
+            else if (j.message) parsed = j.message;
+          } catch (_) {}
+          throw new Error(parsed);
+        }
+        const data = await res.json();
+        return {
+          tier: data.tier || 'free',
+          character_count: data.character_count || 0,
+          character_limit: data.character_limit || 10000,
+          status: data.status || 'active',
+        } as unknown as T;
+      } catch (err: any) {
+        console.error('ElevenLabs account verification error:', err);
+        throw err;
+      }
+    }
+
     case 'tts_get_cache_stats':
       return {
         total_files: 12,
@@ -251,6 +284,10 @@ export const ttsApi = {
 
   testProvider: async (provider: string, apiKey?: string): Promise<TtsResult> => {
     return callTtsTauri<TtsResult>('tts_test_provider', { provider, apiKey });
+  },
+
+  verifyElevenLabsAccount: async (apiKey?: string): Promise<ElevenLabsAccountInfo> => {
+    return callTtsTauri<ElevenLabsAccountInfo>('tts_verify_elevenlabs_account', { apiKey });
   },
 
   getCacheStats: async (): Promise<TtsCacheStats> => {
