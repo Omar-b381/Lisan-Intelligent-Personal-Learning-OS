@@ -136,6 +136,49 @@ function getFallbackData<T>(cmd: string, args?: any): T {
         current_streak_days: 7,
       } as unknown as T;
 
+    case 'get_pomodoro_config':
+      return {
+        focus_duration_secs: 25 * 60,
+        short_break_duration_secs: 5 * 60,
+        long_break_duration_secs: 15 * 60,
+        sessions_before_long_break: 4,
+        auto_start_breaks: false,
+        auto_start_focus: false,
+        sound_enabled: true,
+        notifications_enabled: true,
+      } as unknown as T;
+
+    case 'start_study_session':
+    case 'end_study_session':
+      return {
+        id: 'mock-session-1',
+        deck_id: args?.deckId || null,
+        pomodoro_session_id: null,
+        started_at: new Date(),
+        ended_at: null,
+        cards_studied: 1,
+        correct_count: 1,
+        again_count: 0,
+        hard_count: 0,
+        good_count: 1,
+        easy_count: 0,
+        duration_seconds: 60,
+        xp_earned: 25,
+      } as unknown as T;
+
+    case 'submit_review':
+      return {
+        card_id: args?.dto?.card_id || 'mock-card-1',
+        rating: args?.dto?.rating || 'good',
+        new_state: 'review',
+        next_review: new Date(Date.now() + 3 * 24 * 3600 * 1000).toISOString(),
+        interval_days: 3.0,
+        stability: 3.5,
+        difficulty: 4.0,
+        review_count: 1,
+        xp_awarded: 20,
+      } as unknown as T;
+
     case 'get_heatmap':
       return [] as unknown as T;
 
@@ -194,6 +237,12 @@ function getFallbackData<T>(cmd: string, args?: any): T {
           },
           deck_name: 'Core English Vocabulary',
           priority_score: 100.0,
+          previews: {
+            again_interval_desc: '< 10m',
+            hard_interval_desc: '1d',
+            good_interval_desc: '3d',
+            easy_interval_desc: '8d',
+          },
         },
       ] as unknown as T;
 

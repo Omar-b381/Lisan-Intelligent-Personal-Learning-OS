@@ -48,11 +48,13 @@ export const usePomodoroStore = create<PomodoroState>((set, get) => ({
   init: async () => {
     try {
       const cfg = await api.getPomodoroConfig();
-      set({
-        config: cfg,
-        remainingSeconds: cfg.focus_duration_secs,
-        totalDurationSeconds: cfg.focus_duration_secs,
-      });
+      if (cfg && cfg.focus_duration_secs) {
+        set({
+          config: cfg,
+          remainingSeconds: cfg.focus_duration_secs,
+          totalDurationSeconds: cfg.focus_duration_secs,
+        });
+      }
     } catch (err) {
       console.warn('Failed to load pomodoro config from DB, using defaults:', err);
     }

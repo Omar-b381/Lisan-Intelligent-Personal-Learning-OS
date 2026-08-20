@@ -59,7 +59,7 @@ export const RatingBar: React.FC<RatingBarProps> = ({
     {
       rating: 'again',
       label: t('ratingAgain', language),
-      interval: previews.again_interval_desc,
+      interval: previews?.again_interval_desc || '< 10m',
       shortcut: '1',
       colorClasses: 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-900/60',
       hoverClasses: 'hover:bg-red-100 dark:hover:bg-red-900/60',
@@ -67,7 +67,7 @@ export const RatingBar: React.FC<RatingBarProps> = ({
     {
       rating: 'hard',
       label: t('ratingHard', language),
-      interval: previews.hard_interval_desc,
+      interval: previews?.hard_interval_desc || '1d',
       shortcut: '2',
       colorClasses: 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-900/60',
       hoverClasses: 'hover:bg-amber-100 dark:hover:bg-amber-900/60',
@@ -75,7 +75,7 @@ export const RatingBar: React.FC<RatingBarProps> = ({
     {
       rating: 'good',
       label: t('ratingGood', language),
-      interval: previews.good_interval_desc,
+      interval: previews?.good_interval_desc || '3d',
       shortcut: '3',
       colorClasses: 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-900/60',
       hoverClasses: 'hover:bg-blue-100 dark:hover:bg-blue-900/60',
@@ -83,7 +83,7 @@ export const RatingBar: React.FC<RatingBarProps> = ({
     {
       rating: 'easy',
       label: t('ratingEasy', language),
-      interval: previews.easy_interval_desc,
+      interval: previews?.easy_interval_desc || '8d+',
       shortcut: '4',
       colorClasses: 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-900/60',
       hoverClasses: 'hover:bg-emerald-100 dark:hover:bg-emerald-900/60',

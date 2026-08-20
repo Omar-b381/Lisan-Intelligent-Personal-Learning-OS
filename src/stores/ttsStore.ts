@@ -139,28 +139,39 @@ export const useTtsStore = create<TtsState>((set, get) => ({
         pitch: speechPitch,
       });
 
-      if (!result.base64_data) {
-        throw new Error('No audio data received from speech synthesis');
+      if (result && result.base64_data) {
+        const audioSrc = `data:${result.mime_type};base64,${result.base64_data}`;
+        const audio = new Audio(audioSrc);
+        audio.playbackRate = options?.speed || speechSpeed;
+
+        set({ audioElement: audio });
+
+        audio.onended = () => {
+          set({ isPlaying: false, activeWord: null, audioElement: null });
+          options?.onDone?.();
+          get().loadCacheStats();
+        };
+
+        audio.onerror = (err) => {
+          console.error('Audio playback error:', err);
+          set({ isPlaying: false, activeWord: null, audioElement: null });
+        };
+
+        await audio.play();
+      } else if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        const utterance = new SpeechSynthesisUtterance(clean);
+        utterance.rate = options?.speed || speechSpeed;
+        utterance.onend = () => {
+          set({ isPlaying: false, activeWord: null });
+          options?.onDone?.();
+        };
+        utterance.onerror = () => {
+          set({ isPlaying: false, activeWord: null });
+        };
+        window.speechSynthesis.speak(utterance);
+      } else {
+        set({ isPlaying: false, activeWord: null });
       }
-
-      const audioSrc = `data:${result.mime_type};base64,${result.base64_data}`;
-      const audio = new Audio(audioSrc);
-      audio.playbackRate = options?.speed || speechSpeed;
-
-      set({ audioElement: audio });
-
-      audio.onended = () => {
-        set({ isPlaying: false, activeWord: null, audioElement: null });
-        options?.onDone?.();
-        get().loadCacheStats();
-      };
-
-      audio.onerror = (err) => {
-        console.error('Audio playback error:', err);
-        set({ isPlaying: false, activeWord: null, audioElement: null });
-      };
-
-      await audio.play();
     } catch (err) {
       console.error('Speech synthesis/playback failed:', err);
       set({ isPlaying: false, activeWord: null, audioElement: null });
