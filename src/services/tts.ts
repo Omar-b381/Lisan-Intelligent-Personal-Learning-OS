@@ -11,9 +11,7 @@ import {
 
 async function callTtsTauri<T>(cmd: string, args?: Record<string, unknown>, fallback?: T): Promise<T> {
   if (!isTauri()) {
-    console.warn(`[Lisan Web Preview] Running outside Tauri desktop runtime. TTS Command '${cmd}' using fallback.`);
-    if (fallback !== undefined) return fallback;
-    return getTtsFallback<T>(cmd, args);
+    return handleWebPreviewTts<T>(cmd, args);
   }
 
   try {
@@ -26,14 +24,17 @@ async function callTtsTauri<T>(cmd: string, args?: Record<string, unknown>, fall
   }
 }
 
-function getTtsFallback<T>(cmd: string, args?: any): T {
+// Direct Web Fetch handler when running in browser mode without Tauri backend
+async function handleWebPreviewTts<T>(cmd: string, args?: any): Promise<T> {
   switch (cmd) {
-    case 'tts_get_providers':
+    case 'tts_get_providers': {
+      const elevenKey = localStorage.getItem('lisan_tts_apikey_elevenlabs') || '';
+      const googleKey = localStorage.getItem('lisan_tts_apikey_google') || '';
       return [
         {
           id: 'system',
           name: 'System Speech Synthesizer',
-          description: 'Built-in native offline OS speech engine.',
+          description: 'Built-in native offline OS speech engine. Fast, zero configuration, zero internet required.',
           is_configured: true,
           requires_key: false,
         },
@@ -41,37 +42,184 @@ function getTtsFallback<T>(cmd: string, args?: any): T {
           id: 'elevenlabs',
           name: 'ElevenLabs Prime Voice AI',
           description: 'Ultra-realistic human generative voice AI in 29+ languages.',
-          is_configured: true,
+          is_configured: Boolean(elevenKey.trim()),
           requires_key: true,
         },
         {
           id: 'google',
           name: 'Google Cloud Text-to-Speech',
           description: 'High quality neural voices (Wavenet & Neural2).',
-          is_configured: false,
+          is_configured: Boolean(googleKey.trim()),
           requires_key: true,
         },
       ] as unknown as T;
+    }
 
-    case 'tts_get_voices':
+    case 'tts_get_voices': {
+      const provider = args?.provider || 'elevenlabs';
+      if (provider === 'elevenlabs') {
+        return [
+          {
+            id: '21m00Tcm4TlvDq8ikWAM',
+            name: 'Rachel (Calm, Warm Female)',
+            language: 'en-US',
+            gender: 'female',
+            provider: 'elevenlabs',
+            is_default: true,
+          },
+          {
+            id: 'pNInz6obpgDQGcFmaJgB',
+            name: 'Adam (Deep, Natural Male)',
+            language: 'en-US',
+            gender: 'male',
+            provider: 'elevenlabs',
+            is_default: false,
+          },
+          {
+            id: 'AZnzlk1XvdvUeBnXmlld',
+            name: 'Domi (Strong, Energetic Female)',
+            language: 'en-US',
+            gender: 'female',
+            provider: 'elevenlabs',
+            is_default: false,
+          },
+          {
+            id: 'ErXwobaYiN019PkySvjV',
+            name: 'Antoni (Expressive Male)',
+            language: 'en-US',
+            gender: 'male',
+            provider: 'elevenlabs',
+            is_default: false,
+          },
+          {
+            id: 'EXAVITQu4vr4xnSDxMaL',
+            name: 'Bella (Soft, Gentle Female)',
+            language: 'en-US',
+            gender: 'female',
+            provider: 'elevenlabs',
+            is_default: false,
+          },
+        ] as unknown as T;
+      }
       return [
         {
-          id: '21m00Tcm4TlvDq8ikWAM',
-          name: 'Rachel (Calm, Warm Female)',
+          id: 'default',
+          name: 'System Default Voice',
           language: 'en-US',
-          gender: 'female',
-          provider: 'elevenlabs',
+          provider: 'system',
           is_default: true,
         },
-        {
-          id: 'pNInz6obpgDQGcFmaJgB',
-          name: 'Adam (Deep, Natural Male)',
-          language: 'en-US',
-          gender: 'male',
-          provider: 'elevenlabs',
-          is_default: false,
-        },
       ] as unknown as T;
+    }
+
+    case 'tts_save_provider_credentials': {
+      const prov = args?.provider;
+      const key = args?.apiKey;
+      if (prov && key) {
+        localStorage.setItem(`lisan_tts_apikey_${prov}`, key);
+      }
+      return undefined as unknown as T;
+    }
+
+    case 'tts_test_provider':
+    case 'tts_synthesize': {
+      const req: TtsRequest = args?.request || {
+        text: args?.provider === 'elevenlabs' ? 'Testing ElevenLabs generative voice in Lisan.' : 'Testing speech in Lisan.',
+        provider: args?.provider || 'system',
+      };
+
+      const provider = req.provider || 'system';
+      const storedKey = localStorage.getItem(`lisan_tts_apikey_${provider}`) || args?.apiKey || '';
+
+      // If ElevenLabs and we have an API Key, make actual fetch
+      if (provider === 'elevenlabs' && storedKey.trim()) {
+        try {
+          const voiceId =
+            req.voice && req.voice.trim() !== 'default'
+              ? req.voice.trim()
+              : '21m00Tcm4TlvDq8ikWAM';
+          const speed = Math.max(0.7, Math.min(1.2, req.speed || 1.0));
+
+          const response = await fetch(
+            `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_128`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'xi-api-key': storedKey.trim(),
+              },
+              body: JSON.stringify({
+                text: req.text,
+                model_id: 'eleven_multilingual_v2',
+                voice_settings: {
+                  stability: 0.5,
+                  similarity_boost: 0.75,
+                  speed: speed,
+                },
+              }),
+            }
+          );
+
+          if (response.ok) {
+            const arrayBuffer = await response.arrayBuffer();
+            const bytes = new Uint8Array(arrayBuffer);
+            let binary = '';
+            for (let i = 0; i < bytes.byteLength; i++) {
+              binary += String.fromCharCode(bytes[i]);
+            }
+            const base64Data = btoa(binary);
+
+            return {
+              id: 'elevenlabs-web-id',
+              text_hash: 'web-hash',
+              text: req.text,
+              language: req.language || 'en-US',
+              provider: 'elevenlabs',
+              voice: voiceId,
+              speed: req.speed || 1.0,
+              pitch: 1.0,
+              file_path: 'elevenlabs.mp3',
+              base64_data: base64Data,
+              mime_type: 'audio/mp3',
+              file_size: arrayBuffer.byteLength,
+              duration_ms: 1500,
+              cached: false,
+            } as unknown as T;
+          } else {
+            const errText = await response.text();
+            console.error('ElevenLabs API error response:', errText);
+            throw new Error(`ElevenLabs API Error: ${errText}`);
+          }
+        } catch (e: any) {
+          console.error('Failed to call ElevenLabs web API:', e);
+          throw e;
+        }
+      }
+
+      // Fallback: Browser Web Speech API
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        const utterance = new SpeechSynthesisUtterance(req.text);
+        utterance.rate = req.speed || 1.0;
+        window.speechSynthesis.speak(utterance);
+      }
+
+      return {
+        id: 'mock-tts-id',
+        text_hash: 'mock-hash',
+        text: req.text,
+        language: req.language || 'en-US',
+        provider: provider,
+        voice: req.voice || 'default',
+        speed: req.speed || 1.0,
+        pitch: 1.0,
+        file_path: 'local.wav',
+        base64_data: null,
+        mime_type: 'audio/wav',
+        file_size: 1024,
+        duration_ms: 500,
+        cached: true,
+      } as unknown as T;
+    }
 
     case 'tts_get_cache_stats':
       return {
@@ -82,32 +230,6 @@ function getTtsFallback<T>(cmd: string, args?: any): T {
 
     case 'tts_clear_cache':
       return 0 as unknown as T;
-
-    case 'tts_synthesize':
-    case 'tts_test_provider':
-      // Fallback web speech synthesis
-      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-        const text = args?.request?.text || args?.text || 'Lisan Spaced Repetition';
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.rate = args?.request?.speed || 1.0;
-        window.speechSynthesis.speak(utterance);
-      }
-      return {
-        id: 'mock-tts-id',
-        text_hash: 'mock-hash',
-        text: args?.request?.text || 'Test',
-        language: 'en-US',
-        provider: args?.request?.provider || 'system',
-        voice: 'default',
-        speed: 1.0,
-        pitch: 1.0,
-        file_path: 'mock.wav',
-        base64_data: null,
-        mime_type: 'audio/wav',
-        file_size: 1024,
-        duration_ms: 500,
-        cached: true,
-      } as unknown as T;
 
     default:
       return null as unknown as T;

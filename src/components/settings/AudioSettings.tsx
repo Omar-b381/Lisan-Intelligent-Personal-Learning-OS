@@ -53,8 +53,10 @@ export const AudioSettings: React.FC = () => {
   const handleSaveKey = async (providerId: string) => {
     if (!apiKey.trim()) return;
     setIsSavingKey(true);
+    const keyToSave = apiKey.trim();
     try {
-      await ttsApi.saveProviderCredentials(providerId, apiKey.trim());
+      await ttsApi.saveProviderCredentials(providerId, keyToSave);
+      localStorage.setItem(`lisan_tts_apikey_${providerId}`, keyToSave);
       await loadProviders();
       setProvider(providerId);
       showToast(
@@ -63,6 +65,8 @@ export const AudioSettings: React.FC = () => {
           : 'API Key saved & provider activated successfully!'
       );
       setApiKey('');
+      // Immediate audio playback verification
+      handleTestVoice(providerId, keyToSave);
     } catch (e: any) {
       console.error(e);
       showToast(e?.message || 'Failed to save API key');
@@ -71,13 +75,17 @@ export const AudioSettings: React.FC = () => {
     }
   };
 
-  const handleTestVoice = async (providerId?: string) => {
+  const handleTestVoice = async (providerId?: string, overrideKey?: string) => {
     const prov = providerId || currentProvider;
     setIsTesting(true);
     setTestSuccess(false);
     try {
-      const result = await ttsApi.testProvider(prov, apiKey ? apiKey.trim() : undefined);
-      if (result.base64_data) {
+      const activeKey =
+        overrideKey ||
+        (apiKey.trim() ? apiKey.trim() : localStorage.getItem(`lisan_tts_apikey_${prov}`)) ||
+        undefined;
+      const result = await ttsApi.testProvider(prov, activeKey);
+      if (result && result.base64_data) {
         const audio = new Audio(`data:${result.mime_type};base64,${result.base64_data}`);
         await audio.play();
         setTestSuccess(true);
