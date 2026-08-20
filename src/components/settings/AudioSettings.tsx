@@ -37,6 +37,7 @@ export const AudioSettings: React.FC = () => {
     loadProviders,
     cacheStats,
     loadCacheStats,
+    playPronunciation,
   } = useTtsStore();
 
   const [apiKey, setApiKey] = useState('');
@@ -106,7 +107,7 @@ export const AudioSettings: React.FC = () => {
         handleVerifyAccount(keyToSave);
       }
       // Immediate audio playback verification
-      handleTestVoice(providerId, keyToSave);
+      handleTestVoice(providerId);
     } catch (e: any) {
       console.error(e);
       showToast(e?.message || 'Failed to save API key');
@@ -115,29 +116,33 @@ export const AudioSettings: React.FC = () => {
     }
   };
 
-  const handleTestVoice = async (providerId?: string, overrideKey?: string) => {
+  const handleTestVoice = async (providerId?: string) => {
     const prov = providerId || currentProvider;
     setIsTesting(true);
     setTestSuccess(false);
     try {
-      const activeKey =
-        overrideKey ||
-        (apiKey.trim() ? apiKey.trim() : localStorage.getItem(`lisan_tts_apikey_${prov}`)) ||
-        undefined;
-      const result = await ttsApi.testProvider(prov, activeKey);
-      if (result && result.base64_data) {
-        const audio = new Audio(`data:${result.mime_type};base64,${result.base64_data}`);
-        await audio.play();
-        setTestSuccess(true);
-        loadCacheStats();
-        setTimeout(() => setTestSuccess(false), 4000);
-      }
+      await playPronunciation(
+        language === 'ar'
+          ? 'مرحباً، محرك النطق الصوتي يعمل بنجاح.'
+          : 'Testing voice pronunciation in Lisan.',
+        {
+          language: language === 'ar' ? 'ar' : 'en-US',
+          voice: selectedVoice || 'pNInz6obpgDQGcFmaJgB',
+          speed: speechSpeed,
+          onDone: () => {
+            setTestSuccess(true);
+            setTimeout(() => setTestSuccess(false), 4000);
+          },
+        }
+      );
+      setTestSuccess(true);
+      setTimeout(() => setTestSuccess(false), 4000);
     } catch (e: any) {
       console.error('TTS test failed:', e);
       showToast(
         language === 'ar'
-          ? `فشل اختبار الصوت: تأكد من صحة مفتاح API للـ ${prov}`
-          : `Speech test failed: Verify API key for ${prov}`
+          ? `فشل اختبار الصوت: ${e?.message || 'تأكد من إعدادات المفتاح'}`
+          : `Speech test failed: ${e?.message || 'Check API key'}`
       );
     } finally {
       setIsTesting(false);
