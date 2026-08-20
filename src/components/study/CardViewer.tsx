@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { CardStudyItem } from '../../types/card';
 import { Badge } from '../common/Badge';
 import { Tag } from 'lucide-react';
+import { AudioButton } from '../audio/AudioButton';
+import { useTtsStore } from '../../stores/ttsStore';
 
 interface CardViewerProps {
   item: CardStudyItem;
@@ -11,6 +13,33 @@ interface CardViewerProps {
 
 export const CardViewer: React.FC<CardViewerProps> = ({ item, isRevealed, onReveal }) => {
   const { card, deck_name } = item;
+  const { autoPlayOnStudy, playPronunciation } = useTtsStore();
+
+  // Extract clean text for speech
+  const cleanFrontText = card.front.replace(/\{\{c\d+::(.*?)\}\}/g, '$1').replace(/[*`_#]/g, '').trim();
+  const cleanBackText = card.back.replace(/[*`_#]/g, '').trim();
+
+  // Keyboard shortcut listener for 'P' key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement ||
+        e.target instanceof HTMLSelectElement
+      ) {
+        return;
+      }
+
+      if (e.key === 'p' || e.key === 'P' || e.key === 'ح' /* Arabic key equivalent */) {
+        e.preventDefault();
+        const textToSpeak = isRevealed && cleanBackText ? cleanBackText : cleanFrontText;
+        playPronunciation(textToSpeak);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [cleanFrontText, cleanBackText, isRevealed, playPronunciation]);
 
   // Simple rich-text formatter for bold, italic, code, and cloze
   const renderFormattedText = (text: string, isBack: boolean = false) => {
@@ -74,26 +103,58 @@ export const CardViewer: React.FC<CardViewerProps> = ({ item, isRevealed, onReve
       </div>
 
       {/* Main Flashcard Card */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-8 md:p-12 shadow-xl shadow-slate-200/40 dark:shadow-none min-h-[320px] flex flex-col justify-between transition-all">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-8 md:p-12 shadow-xl shadow-slate-200/40 dark:shadow-none min-h-[320px] flex flex-col justify-between transition-all relative group">
         {/* Front / Question */}
-        <div className="text-xl md:text-2xl font-medium text-slate-900 dark:text-slate-100 leading-relaxed text-center my-auto">
-          {renderFormattedText(card.front, false)}
+        <div className="text-center my-auto space-y-4">
+          <div className="text-xl md:text-2xl font-medium text-slate-900 dark:text-slate-100 leading-relaxed">
+            {renderFormattedText(card.front, false)}
+          </div>
+
+          {/* Pronunciation button on front */}
+          {cleanFrontText && (
+            <div className="flex items-center justify-center gap-2 pt-1">
+              <AudioButton
+                text={cleanFrontText}
+                autoPlay={autoPlayOnStudy && !isRevealed}
+                variant="subtle"
+                size="md"
+                showLabel={true}
+                label="Listen"
+              />
+            </div>
+          )}
         </div>
 
         {/* Answer Section */}
         {isRevealed ? (
-          <div className="mt-8 pt-8 border-t border-slate-100 dark:border-slate-800/80 animate-fade-in">
+          <div className="mt-8 pt-8 border-t border-slate-100 dark:border-slate-800/80 animate-fade-in space-y-4">
             <div className="text-base md:text-lg text-slate-700 dark:text-slate-300 leading-relaxed text-center">
               {renderFormattedText(card.back, true)}
             </div>
 
+            {/* Audio Button for back answer if present */}
+            {cleanBackText && (
+              <div className="flex items-center justify-center">
+                <AudioButton
+                  text={cleanBackText}
+                  variant="ghost"
+                  size="sm"
+                  showLabel={true}
+                  label="Listen to answer"
+                />
+              </div>
+            )}
+
             {/* Notes if present */}
             {card.notes && (
-              <div className="mt-6 p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/50 text-xs text-slate-500 dark:text-slate-400 text-start">
-                <span className="font-semibold block mb-1 text-slate-700 dark:text-slate-300">
-                  Note:
-                </span>
-                {renderFormattedText(card.notes, false)}
+              <div className="mt-6 p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/50 text-xs text-slate-500 dark:text-slate-400 text-start flex items-start justify-between gap-2">
+                <div className="flex-1">
+                  <span className="font-semibold block mb-1 text-slate-700 dark:text-slate-300">
+                    Note:
+                  </span>
+                  {renderFormattedText(card.notes, false)}
+                </div>
+                <AudioButton text={card.notes.replace(/[*`_#]/g, '')} size="sm" variant="ghost" />
               </div>
             )}
           </div>

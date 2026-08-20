@@ -4,6 +4,7 @@ import { Button } from '../common/Button';
 import { CardType } from '../../types/card';
 import { useDeckStore } from '../../stores/deckStore';
 import { useAppStore } from '../../stores/appStore';
+import { AudioButton } from '../audio/AudioButton';
 import { t } from '../../i18n';
 import { Bold, Italic, Code, Eye, Sparkles } from 'lucide-react';
 
@@ -238,6 +239,24 @@ export const CardEditorModal: React.FC = () => {
             className="w-full px-3.5 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-emerald-500 placeholder-slate-400"
           />
         </div>
+
+        {/* Pronunciation & Speech Preview */}
+        {front.trim() && (
+          <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-3 animate-fade-in">
+            <div className="flex items-center gap-2.5">
+              <AudioButton
+                text={front.replace(/\{\{c\d+::(.*?)\}\}/g, '$1').replace(/[*`_#]/g, '').trim()}
+                variant="subtle"
+                size="md"
+                showLabel={true}
+                label={t('listen', language)}
+              />
+              <span className="text-xs text-slate-500 dark:text-slate-400">
+                {t('generatePronunciation', language)}
+              </span>
+            </div>
+          </div>
+        )}
 
         {/* Footer Actions */}
         <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800">

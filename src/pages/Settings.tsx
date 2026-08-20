@@ -9,11 +9,13 @@ import {
   FileUp,
   Save,
   CheckCircle,
+  Volume2,
 } from 'lucide-react';
 import { useAppStore } from '../stores/appStore';
 import { Button } from '../components/common/Button';
 import { BackupModal } from '../components/import_export/BackupModal';
 import { ImportModal } from '../components/import_export/ImportModal';
+import { AudioSettings } from '../components/settings/AudioSettings';
 import { api } from '../services/api';
 import { AppSettings } from '../types/settings';
 import { t } from '../i18n';
@@ -189,6 +191,9 @@ export const Settings: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Speech & Pronunciation (TTS) */}
+        <AudioSettings />
 
         {/* Local Storage & Backup Management */}
         <div className="p-6 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl space-y-4">

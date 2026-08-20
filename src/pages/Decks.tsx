@@ -11,6 +11,7 @@ import {
   Sparkles,
   Edit3,
   Trash2,
+  Volume2,
 } from 'lucide-react';
 import { useDeckStore } from '../stores/deckStore';
 import { useAppStore } from '../stores/appStore';
@@ -18,6 +19,7 @@ import { DeckWithStats } from '../types/deck';
 import { Button } from '../components/common/Button';
 import { Badge } from '../components/common/Badge';
 import { ImportModal } from '../components/import_export/ImportModal';
+import { BulkAudioGenerator } from '../components/audio/BulkAudioGenerator';
 import { api } from '../services/api';
 import { t } from '../i18n';
 
@@ -25,6 +27,7 @@ export const Decks: React.FC = () => {
   const { language, startStudyForDeck, showToast } = useAppStore();
   const { decks, fetchDecks, openCreateDeckModal, openCreateCardModal, deleteDeck } = useDeckStore();
   const [isImportOpen, setIsImportOpen] = useState(false);
+  const [bulkAudioDeck, setBulkAudioDeck] = useState<DeckWithStats | null>(null);
   const [expandedDecks, setExpandedDecks] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
@@ -133,6 +136,14 @@ export const Decks: React.FC = () => {
             </Button>
 
             <button
+              onClick={() => setBulkAudioDeck(node)}
+              title={t('generateDeckAudio', language)}
+              className="p-2 rounded-xl text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors"
+            >
+              <Volume2 className="w-4 h-4" />
+            </button>
+
+            <button
               onClick={() => openCreateCardModal()}
               title="Add card to deck"
               className="p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
@@ -219,6 +230,13 @@ export const Decks: React.FC = () => {
       <ImportModal
         isOpen={isImportOpen}
         onClose={() => setIsImportOpen(false)}
+      />
+
+      {/* Bulk Audio Modal */}
+      <BulkAudioGenerator
+        deck={bulkAudioDeck}
+        isOpen={bulkAudioDeck !== null}
+        onClose={() => setBulkAudioDeck(null)}
       />
     </div>
   );
