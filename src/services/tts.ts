@@ -312,9 +312,104 @@ async function handleWebPreviewTts<T>(cmd: string, args?: any): Promise<T> {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Direct synthesis — works in BOTH browser-dev (localhost:1420) AND Tauri .exe
+// Tauri's WebView2 supports fetch() to external origins exactly like a browser.
+// This completely bypasses the Rust IPC path for audio, fixing the .exe issue.
+// ─────────────────────────────────────────────────────────────────────────────
+async function synthesizeDirectly(request: TtsRequest): Promise<TtsResult> {
+  const provider = request.provider || 'system';
+
+  // ── ElevenLabs ────────────────────────────────────────────────────────────
+  if (provider === 'elevenlabs') {
+    const storedKey = localStorage.getItem('lisan_tts_apikey_elevenlabs') || '';
+    if (!storedKey.trim()) {
+      throw new Error('ElevenLabs API key not found. Please enter and save your API key in Settings → Audio.');
+    }
+    const voiceId =
+      request.voice && request.voice.trim() && request.voice !== 'default'
+        ? request.voice.trim()
+        : 'pNInz6obpgDQGcFmaJgB'; // Adam (free default)
+
+    const resp = await fetch(
+      `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_128`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'xi-api-key': storedKey.trim() },
+        body: JSON.stringify({
+          text: request.text,
+          model_id: 'eleven_multilingual_v2',
+          voice_settings: { stability: 0.5, similarity_boost: 0.75, use_speaker_boost: true },
+        }),
+      }
+    );
+
+    if (!resp.ok) {
+      const errText = await resp.text();
+      let friendly = errText;
+      try {
+        const j = JSON.parse(errText);
+        if (j.detail?.message) friendly = j.detail.message;
+        else if (j.message) friendly = j.message;
+      } catch (_) {}
+      throw new Error(`ElevenLabs error (${resp.status}): ${friendly}`);
+    }
+
+    const arrayBuffer = await resp.arrayBuffer();
+    const bytes = new Uint8Array(arrayBuffer);
+    let binary = '';
+    for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+    const base64Data = btoa(binary);
+
+    return {
+      id: `elevenlabs-${Date.now()}`,
+      text_hash: '',
+      text: request.text,
+      language: request.language || 'en-US',
+      provider: 'elevenlabs',
+      voice: voiceId,
+      speed: request.speed || 1.0,
+      pitch: request.pitch || 1.0,
+      file_path: 'elevenlabs.mp3',
+      base64_data: base64Data,
+      mime_type: 'audio/mpeg',
+      file_size: arrayBuffer.byteLength,
+      duration_ms: 1500,
+      cached: false,
+    };
+  }
+
+  // ── System / Browser Web Speech API ───────────────────────────────────────
+  if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+    const utterance = new SpeechSynthesisUtterance(request.text);
+    utterance.rate = request.speed || 1.0;
+    window.speechSynthesis.speak(utterance);
+  }
+
+  return {
+    id: `system-${Date.now()}`,
+    text_hash: '',
+    text: request.text,
+    language: request.language || 'en-US',
+    provider: 'system',
+    voice: 'default',
+    speed: request.speed || 1.0,
+    pitch: 1.0,
+    file_path: '',
+    base64_data: null,
+    mime_type: 'audio/wav',
+    file_size: 0,
+    duration_ms: 0,
+    cached: false,
+  };
+}
+
 export const ttsApi = {
   synthesize: async (request: TtsRequest): Promise<TtsResult> => {
-    return callTtsTauri<TtsResult>('tts_synthesize', { request });
+    // ALWAYS use direct frontend fetch for synthesis (works in both browser dev and Tauri .exe)
+    // Tauri webview supports fetch() to external APIs just like a browser does.
+    // Going through Rust IPC was unreliable due to thread/runtime complexity.
+    return synthesizeDirectly(request);
   },
 
   getVoices: async (provider?: string, language?: string): Promise<Voice[]> => {
