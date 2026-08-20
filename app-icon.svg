@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10b981" />
+      <stop offset="50%" stop-color="#059669" />
+      <stop offset="100%" stop-color="#0f766e" />
+    </linearGradient>
+    <linearGradient id="cardGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="100%" stop-color="#f0fdf4" />
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="128" fill="url(#bg)" />
+  <!-- Shadow Card -->
+  <rect x="136" y="116" width="240" height="300" rx="32" fill="#042f2e" opacity="0.3" transform="rotate(-8 256 266)" />
+  <!-- Secondary Card -->
+  <rect x="136" y="116" width="240" height="300" rx="32" fill="#a7f3d0" opacity="0.8" transform="rotate(6 256 266)" />
+  <!-- Foreground Main Card -->
+  <rect x="136" y="106" width="240" height="300" rx="32" fill="url(#cardGrad)" filter="drop-shadow(0 20px 25px rgba(0,0,0,0.25))" />
+  <!-- Brain / Sparkle / Lisan Symbol -->
+  <path d="M256 180 C230 180 210 200 210 226 C210 240 218 252 228 260 C218 268 210 280 210 294 C210 320 230 340 256 340 C282 340 302 320 302 294 C302 280 294 268 284 260 C294 252 302 240 302 226 C302 200 282 180 256 180 Z" fill="#059669" />
+  <circle cx="256" cy="260" r="16" fill="#34d399" />
+  <path d="M256 210 L256 240 M256 280 L256 310 M230 260 L240 260 M272 260 L282 260" stroke="#ffffff" stroke-width="4" stroke-linecap="round" />
+</svg>

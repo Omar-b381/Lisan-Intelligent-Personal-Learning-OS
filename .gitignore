@@ -1,0 +1,41 @@
+# Node / Web dependencies & builds
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# Rust / Cargo target builds
+target/
+src-tauri/target/
+Cargo.lock
+
+# Tauri artifacts
+src-tauri/.tauri/
+
+# Local databases, media vaults & backups
+*.db
+*.db-shm
+*.db-wal
+.lisan/
+
+# IDE & Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+*.log
+
+# Environment variables
+.env
+.env.*
+!.env.example
