@@ -333,8 +333,8 @@ export const AudioSettings: React.FC = () => {
                   onChange={(e) => setApiKey(e.target.value)}
                   placeholder={
                     elevenInfo?.is_configured
-                      ? '•••••••••••••••••••••••••••••••• (API Key مفعّل ومحفوظ محلياً)'
-                      : 'xi-api-key (e.g. sk_...)'
+                      ? '•••••••••••••••••••••••••••••••• (API Key مفعّل ومحفوظ)'
+                      : 'sk_... أو xi-api-key'
                   }
                   className="w-full pl-3.5 pr-10 py-2.5 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-purple-500 font-mono"
                 />
@@ -355,27 +355,45 @@ export const AudioSettings: React.FC = () => {
                 onClick={() => handleSaveKey('elevenlabs')}
                 disabled={isSavingKey || !apiKey.trim()}
               >
-                {language === 'ar' ? 'حفظ وتفعيل' : 'Save & Activate'}
+                {isSavingKey
+                  ? language === 'ar'
+                    ? 'جاري التحقق...'
+                    : 'Verifying...'
+                  : language === 'ar'
+                  ? 'حفظ وتفعيل'
+                  : 'Save & Activate'}
               </Button>
             </div>
 
-            <div className="flex items-center justify-between text-xs text-slate-400">
-              <span>
+            <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+              <div>
                 {elevenInfo?.is_configured ? (
-                  <span className="text-emerald-500 flex items-center gap-1 font-semibold">
-                    <CheckCircle className="w-3.5 h-3.5" />
-                    {language === 'ar'
-                      ? 'مفتاح ElevenLabs محفوظ ومشفر محلياً'
-                      : 'ElevenLabs Key is verified and stored'}
+                  <span className="text-emerald-500 flex items-center gap-1.5 font-semibold">
+                    <CheckCircle className="w-4 h-4" />
+                    <span>
+                      {language === 'ar'
+                        ? 'مفتاح ElevenLabs محفوظ ومفعّل بنجاح'
+                        : 'ElevenLabs Key is active & ready'}
+                    </span>
                   </span>
                 ) : (
-                  <span>
+                  <span className="text-slate-400">
                     {language === 'ar'
-                      ? 'قم بلصق المفتاح ثم اضغط حفظ وتفعيل'
-                      : 'Paste your key and click Save & Activate'}
+                      ? 'قم بلصق المفتاح من لوحة ElevenLabs ثم اضغط حفظ وتفعيل'
+                      : 'Paste your API key and click Save & Activate'}
                   </span>
                 )}
-              </span>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => handleTestVoice('elevenlabs')}
+                disabled={isTesting}
+                className="text-purple-600 dark:text-purple-400 hover:underline font-semibold flex items-center gap-1 cursor-pointer"
+              >
+                <Volume2 className="w-3.5 h-3.5" />
+                <span>{isTesting ? (language === 'ar' ? 'جاري النطق...' : 'Testing...') : (language === 'ar' ? 'اختبار النطق الصوتي الآن' : 'Test Speech Now')}</span>
+              </button>
             </div>
           </div>
         </div>
