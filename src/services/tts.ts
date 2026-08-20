@@ -227,27 +227,44 @@ async function handleWebPreviewTts<T>(cmd: string, args?: any): Promise<T> {
       if (!storedKey) {
         throw new Error('Please enter an ElevenLabs API key first.');
       }
+
+      // 1. Try subscription endpoint for full character quota details
       try {
         const res = await fetch('https://api.elevenlabs.io/v1/user/subscription', {
           headers: { 'xi-api-key': storedKey },
         });
-        if (!res.ok) {
-          const errText = await res.text();
-          let parsed = errText;
-          try {
-            const j = JSON.parse(errText);
-            if (j.detail?.message) parsed = j.detail.message;
-            else if (j.message) parsed = j.message;
-          } catch (_) {}
-          throw new Error(parsed);
+        if (res.ok) {
+          const data = await res.json();
+          return {
+            tier: data.tier || 'free',
+            character_count: data.character_count || 0,
+            character_limit: data.character_limit || 10000,
+            status: data.status || 'active',
+          } as unknown as T;
         }
-        const data = await res.json();
-        return {
-          tier: data.tier || 'free',
-          character_count: data.character_count || 0,
-          character_limit: data.character_limit || 10000,
-          status: data.status || 'active',
-        } as unknown as T;
+      } catch (_) {}
+
+      // 2. Fallback to models endpoint for keys with standard TTS scope
+      try {
+        const modelsRes = await fetch('https://api.elevenlabs.io/v1/models', {
+          headers: { 'xi-api-key': storedKey },
+        });
+        if (modelsRes.ok) {
+          return {
+            tier: 'Standard / Free',
+            character_count: 0,
+            character_limit: 10000,
+            status: 'active (TTS Ready)',
+          } as unknown as T;
+        }
+        const errText = await modelsRes.text();
+        let parsed = errText;
+        try {
+          const j = JSON.parse(errText);
+          if (j.detail?.message) parsed = j.detail.message;
+          else if (j.message) parsed = j.message;
+        } catch (_) {}
+        throw new Error(parsed);
       } catch (err: any) {
         console.error('ElevenLabs account verification error:', err);
         throw err;

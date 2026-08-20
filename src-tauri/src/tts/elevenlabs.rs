@@ -31,31 +31,48 @@ impl ElevenLabsProvider {
             .unwrap_or_else(|_| Client::new());
 
         let clean_key = key.trim().trim_matches('"').trim_matches('\'');
-        let resp = client.get("https://api.elevenlabs.io/v1/user/subscription")
+
+        // 1. Try subscription endpoint for full character quota details
+        let sub_resp = client.get("https://api.elevenlabs.io/v1/user/subscription")
+            .header("xi-api-key", clean_key)
+            .send();
+
+        if let Ok(resp) = sub_resp {
+            if resp.status().is_success() {
+                if let Ok(json) = resp.json::<serde_json::Value>() {
+                    let tier = json["tier"].as_str().unwrap_or("free").to_string();
+                    let character_count = json["character_count"].as_u64().unwrap_or(0);
+                    let character_limit = json["character_limit"].as_u64().unwrap_or(10000);
+                    let status = json["status"].as_str().unwrap_or("active").to_string();
+
+                    return Ok(ElevenLabsAccountInfo {
+                        tier,
+                        character_count,
+                        character_limit,
+                        status,
+                    });
+                }
+            }
+        }
+
+        // 2. Fallback check on models endpoint (works for standard API keys without user_read permission)
+        let models_resp = client.get("https://api.elevenlabs.io/v1/models")
             .header("xi-api-key", clean_key)
             .send()
             .map_err(|e| AppError::Internal(format!("Network connection error: {}", e)))?;
 
-        if !resp.status().is_success() {
-            let status = resp.status();
-            let err_text = resp.text().unwrap_or_default();
-            return Err(AppError::Internal(format!("ElevenLabs Verification Error (HTTP {}): {}", status, err_text)));
+        if models_resp.status().is_success() {
+            return Ok(ElevenLabsAccountInfo {
+                tier: "Standard".to_string(),
+                character_count: 0,
+                character_limit: 10000,
+                status: "active (TTS Ready)".to_string(),
+            });
         }
 
-        let json: serde_json::Value = resp.json()
-            .map_err(|e| AppError::Internal(format!("Failed to parse response: {}", e)))?;
-
-        let tier = json["tier"].as_str().unwrap_or("free").to_string();
-        let character_count = json["character_count"].as_u64().unwrap_or(0);
-        let character_limit = json["character_limit"].as_u64().unwrap_or(10000);
-        let status = json["status"].as_str().unwrap_or("active").to_string();
-
-        Ok(ElevenLabsAccountInfo {
-            tier,
-            character_count,
-            character_limit,
-            status,
-        })
+        let status = models_resp.status();
+        let err_text = models_resp.text().unwrap_or_default();
+        Err(AppError::Internal(format!("ElevenLabs API Error (HTTP {}): {}", status, err_text)))
     }
 }
 
