@@ -4,7 +4,7 @@
 ### The Intelligent Spaced-Repetition Desktop Learning OS
 
 <p align="center">
-  <strong>تطبيق مكتبي متكامل (Cross-Platform Native Desktop Application) يجمع بين أحدث خوارزميات التكرار المتباعد (FSRS Memory Engine)، والاسترجاع النشط (Active Recall)، ونظام النطق الصوتي الفوري (Text-to-Speech & Pronunciation Engine)، وإدارة جلسات التركيز (Pomodoro)، والتحليلات العميقة للذاكرة.</strong>
+  <strong>تطبيق مكتبي متكامل (Cross-Platform Native Desktop Application) يجمع بين أحدث خوارزميات التكرار المتباعد (FSRS Memory Engine)، والاسترجاع النشط (Active Recall)، ونظام النطق الصوتي الفوري فائق الواقعية (Neural & Local Text-to-Speech)، وإدارة جلسات التركيز (Pomodoro)، والتحليلات العميقة للذاكرة.</strong>
 </p>
 
 <p align="center">
@@ -12,6 +12,7 @@
   <img src="https://img.shields.io/badge/Tauri-2.x-24C8D8.svg?style=for-the-badge&logo=tauri" alt="Tauri" />
   <img src="https://img.shields.io/badge/React-18/19-61DAFB.svg?style=for-the-badge&logo=react" alt="React" />
   <img src="https://img.shields.io/badge/TypeScript-5.x-3178C6.svg?style=for-the-badge&logo=typescript" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/ElevenLabs-Neural%20AI-purple.svg?style=for-the-badge&logo=elevenlabs" alt="ElevenLabs" />
   <img src="https://img.shields.io/badge/SQLite-WAL%20Mode-003B57.svg?style=for-the-badge&logo=sqlite" alt="SQLite" />
   <img src="https://img.shields.io/badge/Audio-SHA--256%20TTS%20Cache-blueviolet.svg?style=for-the-badge&logo=soundcharts" alt="TTS" />
   <img src="https://img.shields.io/badge/TailwindCSS-3.4-38B2AC.svg?style=for-the-badge&logo=tailwind-css" alt="Tailwind" />
@@ -43,7 +44,7 @@
 
 **«لِسان» (Lisan)** ليس مجرد تطبيق تقليدي لعرض البطاقات التعليمية (Flashcards)، بل هو **نظام تشغيل معرفي متكامل (Personal Learning OS)** مصمم محلياً بالكامل (Offline-First & Local-First). 
 
-يقوم النظام بنمذجة ذاكرة المتعلّم رياضياً بالاعتماد على خوارزمية **FSRS (Free Spaced Repetition Scheduler)** الحديثة، للتنبؤ بدقة بلحظة تلاشي المعلومة وجدولة المراجعات بالوقت الأمثل قبل النسيان مباشرة. كما يحتوي على **محرك نطق صوتي متقدم (Text-to-Speech Engine)** يدعم النطق الصوتي الفوري للكلمات والجمل عبر محركات محلية مجانية ومحركات سحابية فائقة الواقعية مع تخزين مؤقت حتمي (Deterministic SHA-256 Audio Cache)، مع دمج تقنية **بومودورو (Pomodoro Focus)** لقياس سرعة الاستجابة والتركيز الذهني وتحويل التعلّم إلى عادة يومية مستدامة.
+يقوم النظام بنمذجة ذاكرة المتعلّم رياضياً بالاعتماد على خوارزمية **FSRS (Free Spaced Repetition Scheduler)** الحديثة، للتنبؤ بدقة بلحظة تلاشي المعلومة وجدولة المراجعات بالوقت الأمثل قبل النسيان مباشرة. كما يحتوي على **محرك نطق صوتي متقدم (Text-to-Speech Engine)** يدعم النطق الصوتي الفوري للكلمات والجمل عبر محركات محلية مجانية ومحركات سحابية فائقة الواقعية (مثل **ElevenLabs AI** و **Google Cloud TTS**) مع تخزين مؤقت حتمي (Deterministic SHA-256 Audio Cache)، مع دمج تقنية **بومودورو (Pomodoro Focus)** لقياس سرعة الاستجابة والتركيز الذهني وتحويل التعلّم إلى عادة يومية مستدامة.
 
 ---
 
@@ -51,10 +52,10 @@
 
 | التحدي التقليدي | كيف يعالجه تطبيق «لِسان»؟ |
 | :--- | :--- |
-| **منحنى النسيان السريع (Forgetting Curve)** | ينسى الإنسان أكثر من 70% من المعلومات الجديدة خلال 48 ساعة دون مراجعة منتظمة ومجدولة علمياً. | يعتمد التطبيق نموذج الذاكرة ثلاثي الأبعاد: **الثبات ($S$)**، **الصعوبة ($D$)**، و**قابلية الاسترجاع ($R$)** لإعادة الحساب ديناميكياً لكل بطاقة. |
-| **صعوبة النطق وتعلّم اللغات بدون صوت أصلي** | تفتقر معظم تطبيقات الفلاش كارد إلى نطق صوتي مدمج وتعتمد على إرفاق ملفات mp3 يدوياً لكل كلمة. | **توليد نطق صوتي فوري وتلقائي (TTS)**؛ بنقرة زر أو باختصار `P`، مع دعم التوليد المسبق للرزم كاملة وتخزينها محلياً دون استهلاك إنترنت متكرر. |
+| **منحنى النسيان السريع (Forgetting Curve)** | ينسى الإنسان أكثر من 70% من المعلومات الجديدة خلال 48 ساعة دون مراجعة منتظمة ومجدولة علمياً. | يعتمد التطبيق نموذج الذاكرة ثلاثي الأبعاد: **الثبات ($S$)**، **الصعوبة ($D$)**، و**قابلية الاسترجاع ($R$)** لإعادة الحساب ديناميكياً لكل بطاقة عبر FSRS. |
+| **صعوبة النطق وتعلّم اللغات بدون صوت أصلي** | تفتقر معظم تطبيقات الفلاش كارد إلى نطق صوتي مدمج وتعتمد على إرفاق ملفات mp3 يدوياً لكل كلمة. | **توليد نطق صوتي فوري وتلقائي (TTS)**؛ بنقرة زر أو باختصار `P`، مع دعم ElevenLabs (أصوات الذكاء الاصطناعي التوليدي) والمحركات المحلية المجانية دون استهلاك متكرر. |
 | **تشتت الانتباه وغياب التركيز أثناء المذاكرة** | يعاني الطلاب والمتعلمون من المماطلة وتشتت الانتباه المستمر أثناء المراجعة. | يدمج مؤقت بومودورو مع وضع التركيز الكامل (Distraction-Free Focus Mode) لتتبع المراجعات في سياق زمني محكم. |
-| **الاعتماد الإجباري على السحابة وتهديد الخصوصية** | تتطلب معظم التطبيقات الحديثة اتصالات إنترنت دائمة وتخزن بيانات المستخدم الشخصية على خوادم خارجية. | **معمارية محلية أولاً (Local-First)**؛ قاعدة بيانات SQLite فائقة السرعة، بدون أي متطلبات اتصال أو جمع بيانات خارجية. |
+| **الاعتماد الإجباري على السحابة وتهديد الخصوصية** | تتطلب معظم التطبيقات الحديثة اتصالات إنترنت دائمة وتخزن بيانات المستخدم الشخصية على خوادم خارجية. | **معمارية محلية أولاً (Local-First)**؛ قاعدة بيانات SQLite فائقة السرعة، بدون أي متطلبات اتصال إجباري أو جمع بيانات خارجية. |
 | **ضعف دعم اللغة العربية وتجارب الاستخدام المعربة** | تفتقر معظم أدوات التعلّم المتقدمة (مثل Anki) إلى واجهات عربية أصيلة تدعم اليمين لليسار (RTL) بشكل انسيابي وتجربة مستخدم عصرية. | واجهة عربية وإنجليزية مكتوبة أصلياً بأحدث معايير الـ UI/UX مع دعم كامل لاتجاه RTL والخطوط العربية الحديثة. |
 
 ---
@@ -62,12 +63,14 @@
 ## ⚡ الميزات والقدرات الرئيسية (Key Features)
 
 ### 1. محرك التكرار المتباعد الحديث (FSRS Spaced-Repetition Engine)
-- لا يعتمد على جداول ثابتة (مثل 1 يوم / 3 أيام / 7 أيام).
+- لا يعتمد على جداول ثابتة عشوائية (مثل 1 يوم / 3 أيام / 7 أيام).
 - حساب فترات المراجعة التقديرية مباشرة على أزرار التقييم الأربعة: **أعدها (`< 10m`)**، **صعبة (`1d`)**، **جيدة (`3d`)**، و**سهلة (`8d+`)**.
 - الانتقال الحتمي بين حالات البطاقة: `جديدة (New)`، `قيد التعلّم (Learning)`، `مراجعة (Review)`، `إعادة تعلّم (Relearning)`، و`معلّقة (Suspended)`.
 
 ### 2. منظومة النطق الصوتي الفوري (Text-to-Speech & Pronunciation)
 - استمع لنطق أي بطاقة، مصطلح، أو جملة فورياً.
+- دعم كامل لأحدث نماذج **ElevenLabs Generative AI** مع الأصوات الطبيعية المجانية المعتمدة (**Adam**, **Sarah**, **George**, **Daniel**, **Antoni**).
+- لوحة تشخيص وفحص الرصيد والحساب الحي (Live Account Quota & Permissions Diagnostic).
 - اختصار لوحة المفاتيح العالمي **`P`** (أو **`ح`** على لوحة المفاتيح العربية) لتشغيل النطق فوراً في وضع المراجعة.
 - خيار **التشغيل التلقائي (Auto-Play)** لنطق الكلمة بمجرد ظهور وجه البطاقة.
 - أداة **توليد أصوات الرزمة دفعة واحدة (Bulk Deck Audio Generator)** مع شريط تقدم مباشر وحساب تقديري للحجم.
@@ -101,12 +104,12 @@ flowchart TD
     subgraph Frontend["React Frontend"]
         CardViewer["CardViewer / Study Mode (Shortcut P)"]
         AudioBtn["AudioButton Component"]
-        AudioPlayer["AudioPlayer Preview"]
+        VoiceSelect["VoiceSelector (Instant Fallbacks)"]
         BulkGen["BulkAudioGenerator Modal"]
     end
 
     subgraph IPC["Tauri 2.x IPC Layer"]
-        Commands["tts_synthesize / tts_generate_bulk"]
+        Commands["tts_synthesize / tts_test_provider / tts_verify_account"]
     end
 
     subgraph Backend["Rust Backend (TtsService)"]
@@ -115,12 +118,12 @@ flowchart TD
         MediaVault[("Local Media Vault (media/)")]
         
         Router{"TtsProvider Router"}
-        SystemTTS["SystemTtsProvider (Native OS / Offline)"]
+        SystemTTS["SystemTtsProvider (Native OS SAPI / Offline)"]
         GoogleTTS["GoogleTtsProvider (Cloud WaveNet / Neural2)"]
-        ElevenLabs["ElevenLabsProvider (Ultra-Realistic AI)"]
+        ElevenLabs["ElevenLabsProvider (ureq Zero-Blocking Client)"]
     end
 
-    CardViewer & AudioBtn & AudioPlayer & BulkGen --> Commands
+    CardViewer & AudioBtn & VoiceSelect & BulkGen --> Commands
     Commands --> CacheKey
     CacheKey --> SQLiteCache
     
@@ -136,15 +139,18 @@ flowchart TD
 ```
 
 ### مزودو الخدمة المدعومون (Supported Providers):
-1. **نظام التشغيل المحلي (System TTS)**:
+1. **ElevenLabs AI (الجيل الأحدث من الصوت العصبي)**:
+   - دعم مباشر للغة العربية وأكثر من 29 لغة عالمية عبر نموذج `eleven_multilingual_v2`.
+   - التوافق الكامل مع الأصوات الافتراضية المجانية (**Adam, Sarah, George, Daniel, Antoni**).
+   - تشغيل متزامن غير حاجز (Zero-Blocking Sync IO) عبر مكتبة `ureq` الخفيفة لتفادي تعارض خيوط Tokio الرستمية.
+   - فحص ذكي ثلاثي المراحل لمفاتيح الـ API (التحقق من الرصيد والاشتراك ➔ الموديلات ➔ اختبار النبضة الصوتية المباشر).
+2. **نظام التشغيل المحلي (System TTS)**:
    - يعمل محلياً 100% دون الحاجة إلى إنترنت أو مفاتيح API.
    - على Windows: يستخدم واجهة `System.Speech.Synthesis` و SAPI لتوليد ملفات `.wav` فائقة النقاء فورياً.
    - على macOS: يستخدم محرك `say` الأصلي.
    - على Linux: يستخدم `espeak-ng` / `speech-dispatcher`.
-2. **Google Cloud Text-to-Speech**:
+3. **Google Cloud Text-to-Speech**:
    - دعم كامل للأصوات القياسية وأصوات WaveNet و Neural2 عالية الدقة بأكثر من 40 لغة.
-3. **ElevenLabs**:
-   - نطق صوتي فائق الواقعية بأحدث نماذج الذكاء الاصطناعي التوليدي الصوتي.
 
 ### التخزين المؤقت الحتمي (Deterministic SHA-256 Caching):
 - يتم استخراج بصمة تجزئة فريدة لكل طلب: `hash = SHA256(text + language + provider + voice + speed + pitch)`.
@@ -160,7 +166,7 @@ flowchart TD
 graph LR
     UI[React 19 + TypeScript + Tailwind] -- "Tauri IPC (Commands)" --> Rust[Rust Backend Core]
     Rust --> FSRS[FSRS Scheduler Engine]
-    Rust --> TTS[TTS & Audio Engine]
+    Rust --> TTS[TTS & Audio Engine (ureq + SAPI)]
     Rust --> Pomo[Monotonic Timer & XP Service]
     Rust --> SQLite[(SQLite 3 + WAL + FTS5)]
 ```
@@ -169,8 +175,8 @@ graph LR
 | :--- | :--- | :--- |
 | **إطار التطبيق المكتبي** | **Tauri 2.x** | يوفر تطبيقاً مكتبياً أصيلاً بحجم لا يتجاوز 15 ميغابايت، واستهلاك ذاكرة ضئيل جداً مقارنة بـ Electron، مع أمان فائق عبر عزل الصلاحيات ونظام IPC منيع. |
 | **لغة المعالجة الخلفية** | **Rust 2021** | ضمان أمان الذاكرة والسرعة القصوى، وعدم وجود Garbage Collector، مما يجعل عمليات الحسابات الإحصائية وجدولة مئات آلاف البطاقات وتوليد الصوت فورية دون تجميد الواجهة. |
-| **محرك الصوت والتوليد** | **Rustreqwest (Rustls) + SAPI** | توليد الصوت عبر خيوط معالجة خلفية (Background Threads) منفصلة مع معالجة غير حاجزة ونظام كاش ذري. |
-| **قاعدة البيانات** | **SQLite 3 (rusqlite)** | أفضل محرك تخزين محلي غير متصل، تم تفعيله بوضع **WAL (Write-Ahead Logging)** مع فهرسة كاملة ودعم البحث النصي **FTS5** ومعاملات ACID لضمان سلامة سجلات المراجعة وجداول الصوت `tts_audio`. |
+| **محرك الشبكة والصوت** | **ureq (TLS) + SAPI** | شبكة غير متداخلة مع Tokio Runtimes لمنع أي انهيارات برمجية (Zero-Tokio Drop Panics)، مع معالجة غير حاجزة ونظام كاش ذري. |
+| **قاعدة البيانات** | **SQLite 3 (rusqlite)** | أفضل محرك تخزين محلي غير متصل، تم تفعيله بوضع **WAL (Write-Ahead Logging)** مع قفل متكيف للتعافي من التسمم (Poison-Resilient Mutex)، وفهرسة كاملة ودعم البحث النصي **FTS5**. |
 | **واجهة المستخدم** | **React + TypeScript** | بناء واجهة مستخدم مرنة وقابلة للصيانة بنظام المكونات المعيارية، مع فحص صارم للأنواع لمنع الأخطاء البرمجية أثناء وقت التطوير. |
 | **إدارة الحالة** | **Zustand** | مكتبة إدارة حالة فائقة الخفة وبسيطة المعمارية، تلغي الحاجة للتعقيدات الزائدة وتوفر وصولاً سريعاً دون إعادة تصيير (Re-renders) غير ضرورية. |
 | **التصميم والأنماط** | **Tailwind CSS** | نظام تصميم معتمد على Tokens قابلة للتخصيص، مع دعم أصيل وديناميكي لتبديل السمات (داكن / فاتح) واتجاه القراءة العربي (RTL Layout). |
@@ -185,7 +191,7 @@ graph LR
 ┌─────────────────────────────────────────────────────────────┐
 │ 1. Frontend Layer (React 19 + Zustand + Tailwind + i18n)    │
 │    - Views: Dashboard | Study | Decks | Browser | Analytics │
-│    - Audio Components: AudioButton, AudioPlayer, BulkGen    │
+│    - Audio: AudioButton, AudioPlayer, VoiceSelector, BulkGen│
 └──────────────────────────────┬──────────────────────────────┘
                                 │ Typed Tauri IPC Invocations
 ┌──────────────────────────────▼──────────────────────────────┐
@@ -204,7 +210,8 @@ graph LR
                                 │
 ┌──────────────────────────────▼──────────────────────────────┐
 │ 4. Persistence Layer (rusqlite Repositories + Migrations)   │
-│    - SQLite 3 (WAL mode, Foreign Keys, Schema Migrations)  │
+│    - SQLite 3 (WAL mode, Foreign Keys, Schema Migrations)   │
+│    - Poison-Resilient Mutex Locking Strategy                │
 │    - Migrations: 001_initial.sql, 002_seed, 003_tts_audio   │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -212,7 +219,7 @@ graph LR
 ### قرارات هندسية بارزة:
 1. **حظر وضع منطق العمليات (Business Logic) في React**: الواجهة مسؤولة فقط عن العرض والتفاعل، بينما تُنفذ كافة الحسابات الرياضية والتحقق وتوليد الصوت وتعديل البيانات حصرياً داخل Rust.
 2. **استخدام نظام الهجرات التلقائية المتسلسل (SQL Migrations)**: لا يتم تعديل أي جداول يدوياً؛ بل تُطبق ملفات `001_initial.sql` و`002_seed.sql` و`003_tts_audio.sql` داخل معاملات ذرية آمنة عند إقلاع التطبيق.
-3. **أمان مفاتيح الـ API (API Keys Security)**: لا يتم حفظ مفاتيح Google أو ElevenLabs في الذاكرة الأمامية لـ React أو في متغيرات عامة مكشوفة، بل تُشفر وتُخزن في جدول إعدادات SQLite الآمن ولا تمرر للواجهة نهائياً.
+3. **أمان مفاتيح الـ API (API Keys Security)**: لا يتم حفظ مفاتيح Google أو ElevenLabs في الذاكرة الأمامية لـ React أو في متغيرات عامة مكشوفة، بل تُشفر وتُخزن في جدول إعدادات SQLite الآمن.
 4. **مؤقت ذو مرجعية زمنية حقيقية (Monotonic Timestamps)**: مؤقت بومودورو يعتمد على فوارق الطوابع الزمنية وليس على دقة `setInterval` في جافاسكريبت، لضمان عدم تأخر المؤقت عند تصغير النافذة.
 
 ---
@@ -266,9 +273,9 @@ npm run tauri build
 - **المشكلة**: تتطلب خوارزمية FSRS حساب معادلات أُسية متداخلة للتنبؤ بثبات الذاكرة ($S$) وصعوبة السؤال ($D$) لكل تقييم، ويجب تقديم المعاينات التقديرية للأزرار في جزء من المللي ثانية دون أي تأخير في الواجهة.
 - **الحل**: قمنا ببناء محرك رياضي مستقل في Rust داخل وحدة `src-tauri/src/scheduler/fsrs.rs` مدعوم باختبارات وحدة آلية للتحقق من دقة التنبؤ بالاسترجاع ومنع أي أخطاء حسابية أو حالات فيضان رقمي.
 
-#### التحدي 2: توفير نطق صوتي أصلي فوري بدون تبعيات خارجية ثقيلة
-- **المشكلة**: معظم حلول تحويل النص لكلام في برامج سطح المكتب تتطلب إما تثبيت مكتبات بايثون ثقيلة أو فرض اشتراكات سحابية مدفوعة، أو تسبب تجميد الواجهة عند توليد ملفات الصوت الكبيرة.
-- **الحل**: أنشأنا طبقة تجريد `TtsProvider` في Rust مع محرك `SystemTtsProvider` يستدعي واجهات نظام التشغيل المباشرة (Windows SAPI) لإنتاج صوت `.wav` دون أي تبعيات خارجية، بالتوازي مع محرك كاش SHA-256 يمنع إعادة التوليد، ومعالجة التوليد الجماعي في خيوط عمل خلفية (Worker Threads) مع تدرج معدل الطلبات (Rate Limiting).
+#### التحدي 2: تكامل النطق الصوتي التوليدي (ElevenLabs) بدون صراعات Tokio Runtimes
+- **المشكلة**: استخدام عملاء HTTP متزامنين مدمجين مع Tokio داخل بيئة Tauri كان يطلق انهيارات غير متزامنة (`Cannot drop a runtime in a context where blocking is not allowed`) مع تسمم أقفال قاعدة البيانات.
+- **الحل**: تم الانتقال لمحرك `ureq` النقي غير المتداخل مع Runtimes، وتزويد قفل قاعدة البيانات بآلية استعادة تلقائية عند التسمم (`poisoned.into_inner()`)، مع توفير قائمة أصوات مجانية افتراضية وتوليد فوري.
 
 #### التحدي 3: تجربة ثنائية اللغة تدعم RTL الأصيل بدون انكسار الواجهة
 - **المشكلة**: غالباً ما تتسبب الواجهات المعربة في تشوه محاذاة الأيقونات واختصارات لوحة المفاتيح والرسوم البيانية.
