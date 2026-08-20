@@ -192,37 +192,6 @@ export const Settings: React.FC = () => {
           </div>
         </div>
 
-        {/* Speech & Pronunciation (TTS) */}
-        <AudioSettings />
-
-        {/* Local Storage & Backup Management */}
-        <div className="p-6 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl space-y-4">
-          <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-            <Database className="w-4 h-4 text-blue-500" />
-            <span>{t('backupRestore', language)}</span>
-          </h4>
-
-          <div className="flex flex-wrap items-center gap-3">
-            <Button
-              type="button"
-              variant="outline"
-              icon={<Database className="w-4 h-4" />}
-              onClick={() => setIsBackupModalOpen(true)}
-            >
-              {t('createBackupNow', language)}
-            </Button>
-
-            <Button
-              type="button"
-              variant="outline"
-              icon={<FileUp className="w-4 h-4" />}
-              onClick={() => setIsImportModalOpen(true)}
-            >
-              {t('importData', language)}
-            </Button>
-          </div>
-        </div>
-
         {/* Save Button */}
         <div className="flex items-center gap-3">
           <Button
@@ -241,6 +210,37 @@ export const Settings: React.FC = () => {
           )}
         </div>
       </form>
+
+      {/* Speech & Pronunciation (TTS Engine & ElevenLabs API) */}
+      <AudioSettings />
+
+      {/* Local Storage & Backup Management */}
+      <div className="p-6 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl space-y-4">
+        <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+          <Database className="w-4 h-4 text-blue-500" />
+          <span>{t('backupRestore', language)}</span>
+        </h4>
+
+        <div className="flex flex-wrap items-center gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            icon={<Database className="w-4 h-4" />}
+            onClick={() => setIsBackupModalOpen(true)}
+          >
+            {t('createBackupNow', language)}
+          </Button>
+
+          <Button
+            type="button"
+            variant="outline"
+            icon={<FileUp className="w-4 h-4" />}
+            onClick={() => setIsImportModalOpen(true)}
+          >
+            {t('importData', language)}
+          </Button>
+        </div>
+      </div>
 
       {/* Modals */}
       <BackupModal

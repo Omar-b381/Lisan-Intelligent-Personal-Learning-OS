@@ -38,12 +38,17 @@ interface TtsState {
   stopAudio: () => void;
 }
 
+const STORAGE_PROVIDER = 'lisan_tts_provider';
+const STORAGE_VOICE = 'lisan_tts_voice';
+const STORAGE_SPEED = 'lisan_tts_speed';
+const STORAGE_AUTOPLAY = 'lisan_tts_autoplay';
+
 export const useTtsStore = create<TtsState>((set, get) => ({
-  currentProvider: 'system',
-  selectedVoice: 'default',
-  speechSpeed: 1.0,
+  currentProvider: localStorage.getItem(STORAGE_PROVIDER) || 'system',
+  selectedVoice: localStorage.getItem(STORAGE_VOICE) || 'default',
+  speechSpeed: parseFloat(localStorage.getItem(STORAGE_SPEED) || '1.0'),
   speechPitch: 1.0,
-  autoPlayOnStudy: false,
+  autoPlayOnStudy: localStorage.getItem(STORAGE_AUTOPLAY) === 'true',
 
   isPlaying: false,
   activeWord: null,
@@ -55,14 +60,27 @@ export const useTtsStore = create<TtsState>((set, get) => ({
   isLoadingVoices: false,
 
   setProvider: (currentProvider) => {
+    localStorage.setItem(STORAGE_PROVIDER, currentProvider);
     set({ currentProvider });
     get().loadVoices(currentProvider);
   },
 
-  setVoice: (selectedVoice) => set({ selectedVoice }),
-  setSpeed: (speechSpeed) => set({ speechSpeed }),
+  setVoice: (selectedVoice) => {
+    localStorage.setItem(STORAGE_VOICE, selectedVoice);
+    set({ selectedVoice });
+  },
+
+  setSpeed: (speechSpeed) => {
+    localStorage.setItem(STORAGE_SPEED, speechSpeed.toString());
+    set({ speechSpeed });
+  },
+
   setPitch: (speechPitch) => set({ speechPitch }),
-  setAutoPlayOnStudy: (autoPlayOnStudy) => set({ autoPlayOnStudy }),
+
+  setAutoPlayOnStudy: (autoPlayOnStudy) => {
+    localStorage.setItem(STORAGE_AUTOPLAY, autoPlayOnStudy ? 'true' : 'false');
+    set({ autoPlayOnStudy });
+  },
 
   loadProviders: async () => {
     try {

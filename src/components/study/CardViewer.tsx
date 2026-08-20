@@ -81,6 +81,21 @@ export const CardViewer: React.FC<CardViewerProps> = ({ item, isRevealed, onReve
           {deck_name}
         </span>
         <div className="flex items-center gap-1.5">
+          {/* Active Audio Engine Indicator */}
+          <span title="Active TTS Engine">
+            <Badge
+              variant="default"
+              size="sm"
+              className="gap-1 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-mono text-[10px]"
+            >
+              {useTtsStore.getState().currentProvider === 'elevenlabs'
+                ? '🎙️ ElevenLabs AI'
+                : useTtsStore.getState().currentProvider === 'google'
+                ? '🌐 Google TTS'
+                : '🔊 System TTS'}
+            </Badge>
+          </span>
+
           {card.tags.map((tag) => (
             <Badge key={tag} variant="default" size="sm" className="gap-1">
               <Tag className="w-2.5 h-2.5" />
