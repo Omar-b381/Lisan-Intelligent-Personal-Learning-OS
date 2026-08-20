@@ -61,26 +61,34 @@ async function handleWebPreviewTts<T>(cmd: string, args?: any): Promise<T> {
       if (provider === 'elevenlabs') {
         return [
           {
-            id: '21m00Tcm4TlvDq8ikWAM',
-            name: 'Rachel (Calm, Warm Female)',
+            id: 'pNInz6obpgDQGcFmaJgB',
+            name: 'Adam (Deep, Natural Male)',
             language: 'en-US',
-            gender: 'female',
+            gender: 'male',
             provider: 'elevenlabs',
             is_default: true,
           },
           {
-            id: 'pNInz6obpgDQGcFmaJgB',
-            name: 'Adam (Deep, Natural Male)',
+            id: 'EXAVITQu4vr4xnSDxMaL',
+            name: 'Sarah (Soft, Gentle Female)',
+            language: 'en-US',
+            gender: 'female',
+            provider: 'elevenlabs',
+            is_default: false,
+          },
+          {
+            id: 'JBFqnCBsd6RMkjVDRZzb',
+            name: 'George (Warm, Clear Male)',
             language: 'en-US',
             gender: 'male',
             provider: 'elevenlabs',
             is_default: false,
           },
           {
-            id: 'AZnzlk1XvdvUeBnXmlld',
-            name: 'Domi (Strong, Energetic Female)',
+            id: 'onwK4e9ZLuTAKqWW03F9',
+            name: 'Daniel (Authoritative Male)',
             language: 'en-US',
-            gender: 'female',
+            gender: 'male',
             provider: 'elevenlabs',
             is_default: false,
           },
@@ -89,14 +97,6 @@ async function handleWebPreviewTts<T>(cmd: string, args?: any): Promise<T> {
             name: 'Antoni (Expressive Male)',
             language: 'en-US',
             gender: 'male',
-            provider: 'elevenlabs',
-            is_default: false,
-          },
-          {
-            id: 'EXAVITQu4vr4xnSDxMaL',
-            name: 'Bella (Soft, Gentle Female)',
-            language: 'en-US',
-            gender: 'female',
             provider: 'elevenlabs',
             is_default: false,
           },
@@ -138,7 +138,7 @@ async function handleWebPreviewTts<T>(cmd: string, args?: any): Promise<T> {
           const voiceId =
             req.voice && req.voice.trim() !== 'default'
               ? req.voice.trim()
-              : '21m00Tcm4TlvDq8ikWAM';
+              : 'pNInz6obpgDQGcFmaJgB';
           const speed = Math.max(0.7, Math.min(1.2, req.speed || 1.0));
 
           const response = await fetch(
@@ -244,7 +244,7 @@ async function handleWebPreviewTts<T>(cmd: string, args?: any): Promise<T> {
         }
       } catch (_) {}
 
-      // 2. Fallback to models endpoint for keys with standard TTS scope
+      // 2. Try models endpoint
       try {
         const modelsRes = await fetch('https://api.elevenlabs.io/v1/models', {
           headers: { 'xi-api-key': storedKey },
@@ -257,7 +257,33 @@ async function handleWebPreviewTts<T>(cmd: string, args?: any): Promise<T> {
             status: 'active (TTS Ready)',
           } as unknown as T;
         }
-        const errText = await modelsRes.text();
+      } catch (_) {}
+
+      // 3. Direct TTS ping with default free premade voice (Adam)
+      try {
+        const pingRes = await fetch(
+          'https://api.elevenlabs.io/v1/text-to-speech/pNInz6obpgDQGcFmaJgB?output_format=mp3_44100_128',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'xi-api-key': storedKey,
+            },
+            body: JSON.stringify({
+              text: 'Hi',
+              model_id: 'eleven_multilingual_v2',
+            }),
+          }
+        );
+        if (pingRes.ok) {
+          return {
+            tier: 'Standard / Free',
+            character_count: 0,
+            character_limit: 10000,
+            status: 'active (TTS Verified)',
+          } as unknown as T;
+        }
+        const errText = await pingRes.text();
         let parsed = errText;
         try {
           const j = JSON.parse(errText);

@@ -45,18 +45,41 @@ impl ElevenLabsProvider {
             }
         }
 
-        // 2. Fallback check on models endpoint (works for standard API keys without user_read permission)
+        // 2. Try models endpoint
         let models_res = ureq::get("https://api.elevenlabs.io/v1/models")
             .set("xi-api-key", clean_key)
             .timeout(Duration::from_secs(10))
             .call();
 
-        match models_res {
+        if let Ok(resp) = models_res {
+            if resp.status() == 200 {
+                return Ok(ElevenLabsAccountInfo {
+                    tier: "Free / Standard".to_string(),
+                    character_count: 0,
+                    character_limit: 10000,
+                    status: "active (TTS Ready)".to_string(),
+                });
+            }
+        }
+
+        // 3. Fallback check: Direct TTS ping with default free premade voice (Adam)
+        let ping_body = json!({
+            "text": "Hi",
+            "model_id": "eleven_multilingual_v2"
+        });
+
+        let tts_res = ureq::post("https://api.elevenlabs.io/v1/text-to-speech/pNInz6obpgDQGcFmaJgB?output_format=mp3_44100_128")
+            .set("xi-api-key", clean_key)
+            .set("Content-Type", "application/json")
+            .timeout(Duration::from_secs(12))
+            .send_json(&ping_body);
+
+        match tts_res {
             Ok(resp) if resp.status() == 200 => Ok(ElevenLabsAccountInfo {
-                tier: "Standard".to_string(),
+                tier: "Free / Standard".to_string(),
                 character_count: 0,
                 character_limit: 10000,
-                status: "active (TTS Ready)".to_string(),
+                status: "active (TTS Verified)".to_string(),
             }),
             Ok(resp) => {
                 let err_text = resp.into_string().unwrap_or_default();
@@ -101,29 +124,37 @@ impl TtsProvider for ElevenLabsProvider {
     }
 
     fn available_voices(&self, _language: Option<&str>) -> AppResult<Vec<Voice>> {
-        // High quality standard ElevenLabs voices
+        // High quality guaranteed standard free ElevenLabs voices
         Ok(vec![
-            Voice {
-                id: "21m00Tcm4TlvDq8ikWAM".to_string(),
-                name: "Rachel (Calm, Warm Female)".to_string(),
-                language: "en-US".to_string(),
-                gender: Some("female".to_string()),
-                provider: "elevenlabs".to_string(),
-                is_default: true,
-            },
             Voice {
                 id: "pNInz6obpgDQGcFmaJgB".to_string(),
                 name: "Adam (Deep, Natural Male)".to_string(),
                 language: "en-US".to_string(),
                 gender: Some("male".to_string()),
                 provider: "elevenlabs".to_string(),
+                is_default: true,
+            },
+            Voice {
+                id: "EXAVITQu4vr4xnSDxMaL".to_string(),
+                name: "Sarah (Soft, Gentle Female)".to_string(),
+                language: "en-US".to_string(),
+                gender: Some("female".to_string()),
+                provider: "elevenlabs".to_string(),
                 is_default: false,
             },
             Voice {
-                id: "AZnzlk1XvdvUeBnXmlld".to_string(),
-                name: "Domi (Strong, Energetic Female)".to_string(),
+                id: "JBFqnCBsd6RMkjVDRZzb".to_string(),
+                name: "George (Warm, Clear Male)".to_string(),
                 language: "en-US".to_string(),
-                gender: Some("female".to_string()),
+                gender: Some("male".to_string()),
+                provider: "elevenlabs".to_string(),
+                is_default: false,
+            },
+            Voice {
+                id: "onwK4e9ZLuTAKqWW03F9".to_string(),
+                name: "Daniel (Authoritative Male)".to_string(),
+                language: "en-US".to_string(),
+                gender: Some("male".to_string()),
                 provider: "elevenlabs".to_string(),
                 is_default: false,
             },
@@ -132,14 +163,6 @@ impl TtsProvider for ElevenLabsProvider {
                 name: "Antoni (Expressive Male)".to_string(),
                 language: "en-US".to_string(),
                 gender: Some("male".to_string()),
-                provider: "elevenlabs".to_string(),
-                is_default: false,
-            },
-            Voice {
-                id: "EXAVITQu4vr4xnSDxMaL".to_string(),
-                name: "Bella (Soft, Gentle Female)".to_string(),
-                language: "en-US".to_string(),
-                gender: Some("female".to_string()),
                 provider: "elevenlabs".to_string(),
                 is_default: false,
             },
@@ -153,7 +176,7 @@ impl TtsProvider for ElevenLabsProvider {
 
         let voice_id = match &request.voice {
             Some(v) if !v.trim().is_empty() && v != "default" => v.trim().to_string(),
-            _ => "21m00Tcm4TlvDq8ikWAM".to_string(),
+            _ => "pNInz6obpgDQGcFmaJgB".to_string(),
         };
         let body = json!({
             "text": request.text,
