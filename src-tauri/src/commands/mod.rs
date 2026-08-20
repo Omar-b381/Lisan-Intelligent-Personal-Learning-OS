@@ -322,7 +322,10 @@ pub async fn save_app_settings(state: State<'_, AppState>, settings: AppSettings
 
 #[tauri::command]
 pub async fn tts_synthesize(state: State<'_, AppState>, request: TtsRequest) -> Result<TtsResult, AppError> {
-    state.tts_service.synthesize(request)
+    let svc = state.tts_service.clone();
+    tauri::async_runtime::spawn_blocking(move || svc.synthesize(request))
+        .await
+        .map_err(|e| AppError::Internal(format!("TTS thread join error: {}", e)))?
 }
 
 #[tauri::command]
@@ -331,12 +334,20 @@ pub async fn tts_get_voices(
     provider: Option<String>,
     language: Option<String>,
 ) -> Result<Vec<Voice>, AppError> {
-    state.tts_service.get_available_voices(provider.as_deref(), language.as_deref())
+    let svc = state.tts_service.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        svc.get_available_voices(provider.as_deref(), language.as_deref())
+    })
+    .await
+    .map_err(|e| AppError::Internal(format!("TTS thread join error: {}", e)))?
 }
 
 #[tauri::command]
 pub async fn tts_get_providers(state: State<'_, AppState>) -> Result<Vec<ProviderInfo>, AppError> {
-    state.tts_service.get_providers()
+    let svc = state.tts_service.clone();
+    tauri::async_runtime::spawn_blocking(move || svc.get_providers())
+        .await
+        .map_err(|e| AppError::Internal(format!("TTS thread join error: {}", e)))?
 }
 
 #[tauri::command]
@@ -345,7 +356,10 @@ pub async fn tts_test_provider(
     provider: String,
     api_key: Option<String>,
 ) -> Result<TtsResult, AppError> {
-    state.tts_service.test_provider(&provider, api_key.as_deref())
+    let svc = state.tts_service.clone();
+    tauri::async_runtime::spawn_blocking(move || svc.test_provider(&provider, api_key.as_deref()))
+        .await
+        .map_err(|e| AppError::Internal(format!("TTS thread join error: {}", e)))?
 }
 
 #[tauri::command]
@@ -372,7 +386,10 @@ pub async fn tts_verify_elevenlabs_account(
     state: State<'_, AppState>,
     api_key: Option<String>,
 ) -> Result<crate::tts::models::ElevenLabsAccountInfo, AppError> {
-    state.tts_service.verify_elevenlabs_account(api_key.as_deref())
+    let svc = state.tts_service.clone();
+    tauri::async_runtime::spawn_blocking(move || svc.verify_elevenlabs_account(api_key.as_deref()))
+        .await
+        .map_err(|e| AppError::Internal(format!("TTS thread join error: {}", e)))?
 }
 
 #[tauri::command]

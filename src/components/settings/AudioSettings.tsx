@@ -53,7 +53,15 @@ export const AudioSettings: React.FC = () => {
   useEffect(() => {
     loadProviders();
     loadCacheStats();
-  }, []);
+
+    // Listen for TTS errors from ttsStore (IPC errors shown to user)
+    const onTtsError = (e: Event) => {
+      const msg = (e as CustomEvent<string>).detail || 'TTS error';
+      showToast(language === 'ar' ? `خطأ في الصوت: ${msg}` : `Audio error: ${msg}`);
+    };
+    window.addEventListener('lisan-tts-error', onTtsError);
+    return () => window.removeEventListener('lisan-tts-error', onTtsError);
+  }, [language]);
 
   const handleVerifyAccount = async (overrideKey?: string) => {
     const keyToTest =

@@ -140,13 +140,25 @@ export const useTtsStore = create<TtsState>((set, get) => ({
       });
 
       if (result && result.base64_data) {
-        const audioSrc = `data:${result.mime_type};base64,${result.base64_data}`;
-        const audio = new Audio(audioSrc);
+        // Convert base64 → Blob URL (better WebView2/Tauri compatibility than data: URIs)
+        const byteChars = atob(result.base64_data);
+        const byteArr = new Uint8Array(byteChars.length);
+        for (let i = 0; i < byteChars.length; i++) {
+          byteArr[i] = byteChars.charCodeAt(i);
+        }
+        const mimeType = result.mime_type || 'audio/mpeg';
+        const blob = new Blob([byteArr], { type: mimeType });
+        const blobUrl = URL.createObjectURL(blob);
+
+        const audio = new Audio(blobUrl);
         audio.playbackRate = options?.speed || speechSpeed;
 
         set({ audioElement: audio });
 
+        const cleanup = () => URL.revokeObjectURL(blobUrl);
+
         audio.onended = () => {
+          cleanup();
           set({ isPlaying: false, activeWord: null, audioElement: null });
           options?.onDone?.();
           get().loadCacheStats();
@@ -154,6 +166,7 @@ export const useTtsStore = create<TtsState>((set, get) => ({
 
         audio.onerror = (err) => {
           console.error('Audio playback error:', err);
+          cleanup();
           set({ isPlaying: false, activeWord: null, audioElement: null });
         };
 
@@ -172,8 +185,14 @@ export const useTtsStore = create<TtsState>((set, get) => ({
       } else {
         set({ isPlaying: false, activeWord: null });
       }
-    } catch (err) {
-      console.error('Speech synthesis/playback failed:', err);
+    } catch (err: any) {
+      const msg = err?.message || (typeof err === 'string' ? err : 'Unknown TTS error');
+      console.error('Speech synthesis/playback failed:', msg);
+      // Show error visually so the user knows what went wrong
+      if (typeof window !== 'undefined') {
+        const event = new CustomEvent('lisan-tts-error', { detail: msg });
+        window.dispatchEvent(event);
+      }
       set({ isPlaying: false, activeWord: null, audioElement: null });
     }
   },
