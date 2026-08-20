@@ -109,15 +109,13 @@ impl TtsProvider for ElevenLabsProvider {
             Some(v) if !v.trim().is_empty() && v != "default" => v.trim().to_string(),
             _ => "21m00Tcm4TlvDq8ikWAM".to_string(),
         };
-        let speed = request.speed.unwrap_or(1.0).clamp(0.7, 1.2);
-
         let body = json!({
             "text": request.text,
             "model_id": "eleven_multilingual_v2",
             "voice_settings": {
                 "stability": 0.5,
                 "similarity_boost": 0.75,
-                "speed": speed
+                "use_speaker_boost": true
             }
         });
 

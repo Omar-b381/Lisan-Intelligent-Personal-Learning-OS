@@ -154,7 +154,7 @@ async function handleWebPreviewTts<T>(cmd: string, args?: any): Promise<T> {
                 voice_settings: {
                   stability: 0.5,
                   similarity_boost: 0.75,
-                  speed: speed,
+                  use_speaker_boost: true,
                 },
               }),
             }
