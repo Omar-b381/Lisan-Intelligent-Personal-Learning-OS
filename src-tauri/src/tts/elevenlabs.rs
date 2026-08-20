@@ -1,4 +1,3 @@
-use reqwest::blocking::Client;
 use serde_json::json;
 use std::time::Duration;
 
@@ -8,16 +7,11 @@ use super::provider::{SynthesizedAudio, TtsProvider};
 
 pub struct ElevenLabsProvider {
     api_key: Option<String>,
-    client: Client,
 }
 
 impl ElevenLabsProvider {
     pub fn new(api_key: Option<String>) -> Self {
-        let client = Client::builder()
-            .timeout(Duration::from_secs(20))
-            .build()
-            .unwrap_or_else(|_| Client::new());
-        Self { api_key, client }
+        Self { api_key }
     }
 
     pub fn set_api_key(&mut self, api_key: Option<String>) {
@@ -25,21 +19,17 @@ impl ElevenLabsProvider {
     }
 
     pub fn verify_key(key: &str) -> AppResult<ElevenLabsAccountInfo> {
-        let client = Client::builder()
-            .timeout(Duration::from_secs(12))
-            .build()
-            .unwrap_or_else(|_| Client::new());
-
         let clean_key = key.trim().trim_matches('"').trim_matches('\'');
 
         // 1. Try subscription endpoint for full character quota details
-        let sub_resp = client.get("https://api.elevenlabs.io/v1/user/subscription")
-            .header("xi-api-key", clean_key)
-            .send();
+        let sub_res = ureq::get("https://api.elevenlabs.io/v1/user/subscription")
+            .set("xi-api-key", clean_key)
+            .timeout(Duration::from_secs(10))
+            .call();
 
-        if let Ok(resp) = sub_resp {
-            if resp.status().is_success() {
-                if let Ok(json) = resp.json::<serde_json::Value>() {
+        if let Ok(resp) = sub_res {
+            if resp.status() == 200 {
+                if let Ok(json) = resp.into_json::<serde_json::Value>() {
                     let tier = json["tier"].as_str().unwrap_or("free").to_string();
                     let character_count = json["character_count"].as_u64().unwrap_or(0);
                     let character_limit = json["character_limit"].as_u64().unwrap_or(10000);
@@ -56,23 +46,28 @@ impl ElevenLabsProvider {
         }
 
         // 2. Fallback check on models endpoint (works for standard API keys without user_read permission)
-        let models_resp = client.get("https://api.elevenlabs.io/v1/models")
-            .header("xi-api-key", clean_key)
-            .send()
-            .map_err(|e| AppError::Internal(format!("Network connection error: {}", e)))?;
+        let models_res = ureq::get("https://api.elevenlabs.io/v1/models")
+            .set("xi-api-key", clean_key)
+            .timeout(Duration::from_secs(10))
+            .call();
 
-        if models_resp.status().is_success() {
-            return Ok(ElevenLabsAccountInfo {
+        match models_res {
+            Ok(resp) if resp.status() == 200 => Ok(ElevenLabsAccountInfo {
                 tier: "Standard".to_string(),
                 character_count: 0,
                 character_limit: 10000,
                 status: "active (TTS Ready)".to_string(),
-            });
+            }),
+            Ok(resp) => {
+                let err_text = resp.into_string().unwrap_or_default();
+                Err(AppError::Internal(format!("ElevenLabs API Error: {}", err_text)))
+            }
+            Err(ureq::Error::Status(status, resp)) => {
+                let err_text = resp.into_string().unwrap_or_default();
+                Err(AppError::Internal(format!("ElevenLabs API Error (HTTP {}): {}", status, err_text)))
+            }
+            Err(e) => Err(AppError::Internal(format!("Network connection error: {}", e))),
         }
-
-        let status = models_resp.status();
-        let err_text = models_resp.text().unwrap_or_default();
-        Err(AppError::Internal(format!("ElevenLabs API Error (HTTP {}): {}", status, err_text)))
     }
 }
 
@@ -171,22 +166,27 @@ impl TtsProvider for ElevenLabsProvider {
         });
 
         let url = format!("https://api.elevenlabs.io/v1/text-to-speech/{}?output_format=mp3_44100_128", voice_id);
-        let resp = self.client.post(&url)
-            .header("xi-api-key", key)
-            .header("Content-Type", "application/json")
-            .json(&body)
-            .send()
-            .map_err(|e| AppError::Internal(format!("ElevenLabs network request failed: {}", e)))?;
+        let resp = ureq::post(&url)
+            .set("xi-api-key", key.trim())
+            .set("Content-Type", "application/json")
+            .timeout(Duration::from_secs(20))
+            .send_json(&body);
 
-        if !resp.status().is_success() {
-            let status = resp.status();
-            let err_text = resp.text().unwrap_or_default();
-            return Err(AppError::Internal(format!("ElevenLabs API error (HTTP {}): {}", status, err_text)));
-        }
+        let response = match resp {
+            Ok(r) => r,
+            Err(ureq::Error::Status(code, r)) => {
+                let err_text = r.into_string().unwrap_or_default();
+                return Err(AppError::Internal(format!("ElevenLabs API error (HTTP {}): {}", code, err_text)));
+            }
+            Err(e) => {
+                return Err(AppError::Internal(format!("ElevenLabs network request failed: {}", e)));
+            }
+        };
 
-        let audio_bytes = resp.bytes()
-            .map_err(|e| AppError::Internal(format!("Failed to read ElevenLabs response audio bytes: {}", e)))?
-            .to_vec();
+        use std::io::Read;
+        let mut audio_bytes = Vec::new();
+        response.into_reader().read_to_end(&mut audio_bytes)
+            .map_err(|e| AppError::Internal(format!("Failed to read ElevenLabs response audio bytes: {}", e)))?;
 
         Ok(SynthesizedAudio {
             data: audio_bytes,

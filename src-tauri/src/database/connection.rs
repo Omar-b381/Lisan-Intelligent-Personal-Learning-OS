@@ -56,7 +56,10 @@ impl Database {
     }
 
     pub fn get_connection(&self) -> std::sync::MutexGuard<'_, Connection> {
-        self.conn.lock().expect("Failed to acquire database lock")
+        match self.conn.lock() {
+            Ok(guard) => guard,
+            Err(poisoned) => poisoned.into_inner(),
+        }
     }
 
     pub fn get_db_path(&self) -> &PathBuf {

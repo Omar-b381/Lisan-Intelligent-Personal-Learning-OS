@@ -1,4 +1,3 @@
-use reqwest::blocking::Client;
 use serde_json::json;
 use std::time::Duration;
 
@@ -8,16 +7,11 @@ use super::provider::{SynthesizedAudio, TtsProvider};
 
 pub struct GoogleTtsProvider {
     api_key: Option<String>,
-    client: Client,
 }
 
 impl GoogleTtsProvider {
     pub fn new(api_key: Option<String>) -> Self {
-        let client = Client::builder()
-            .timeout(Duration::from_secs(15))
-            .build()
-            .unwrap_or_else(|_| Client::new());
-        Self { api_key, client }
+        Self { api_key }
     }
 
     pub fn set_api_key(&mut self, api_key: Option<String>) {
@@ -177,18 +171,23 @@ impl TtsProvider for GoogleTtsProvider {
         });
 
         let url = format!("https://texttospeech.googleapis.com/v1/text:synthesize?key={}", key);
-        let resp = self.client.post(&url)
-            .json(&body)
-            .send()
-            .map_err(|e| AppError::Internal(format!("Google Cloud TTS request network failed: {}", e)))?;
+        let resp = ureq::post(&url)
+            .set("Content-Type", "application/json")
+            .timeout(Duration::from_secs(15))
+            .send_json(&body);
 
-        if !resp.status().is_success() {
-            let status = resp.status();
-            let err_text = resp.text().unwrap_or_default();
-            return Err(AppError::Internal(format!("Google TTS API error (HTTP {}): {}", status, err_text)));
-        }
+        let response = match resp {
+            Ok(r) => r,
+            Err(ureq::Error::Status(code, r)) => {
+                let err_text = r.into_string().unwrap_or_default();
+                return Err(AppError::Internal(format!("Google TTS API error (HTTP {}): {}", code, err_text)));
+            }
+            Err(e) => {
+                return Err(AppError::Internal(format!("Google Cloud TTS request network failed: {}", e)));
+            }
+        };
 
-        let json_resp: serde_json::Value = resp.json()
+        let json_resp: serde_json::Value = response.into_json()
             .map_err(|e| AppError::Internal(format!("Failed to parse Google TTS JSON response: {}", e)))?;
 
         let audio_base64 = json_resp["audioContent"].as_str()
