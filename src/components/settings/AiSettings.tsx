@@ -384,6 +384,12 @@ export const AiSettings: React.FC = () => {
                       {showKeys[key] ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                     </button>
                   </div>
+                  {hasKey && (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 pt-0.5">
+                      <CheckCircle className="w-3 h-3" />
+                      <span>{language === 'ar' ? 'المفتاح محفوظ ومشفّر بأمان' : 'API Key encrypted & securely saved'}</span>
+                    </span>
+                  )}
                 </div>
 
                 {/* Model Selection */}
@@ -424,7 +430,13 @@ export const AiSettings: React.FC = () => {
                       onClick={() => handleSaveKey(key, 'preset')}
                       disabled={savingKey === key}
                     >
-                      {savingKey === key ? (language === 'ar' ? 'جاري الحفظ...' : 'Saving...') : (language === 'ar' ? 'حفظ' : 'Save')}
+                      {savingKey === key
+                        ? language === 'ar'
+                          ? 'جاري الحفظ...'
+                          : 'Saving...'
+                        : language === 'ar'
+                        ? 'حفظ وتفعيل'
+                        : 'Save & Activate'}
                     </Button>
 
                     {provId && hasKey && (

@@ -65,6 +65,7 @@ export const Practice: React.FC = () => {
   const activeProvider =
     filterOptions?.active_provider ||
     providers.find((p) => p.is_active && p.is_enabled) ||
+    providers.find((p) => p.has_key && p.is_enabled) ||
     null;
 
   const handleStart = async () => {
@@ -79,6 +80,9 @@ export const Practice: React.FC = () => {
     }
 
     try {
+      if (!activeProvider.is_active && activeProvider.id) {
+        await useAiProviderStore.getState().setActiveProvider(activeProvider.id);
+      }
       await startSession();
     } catch (err: any) {
       showToast(err?.message || 'Failed to start AI practice');
