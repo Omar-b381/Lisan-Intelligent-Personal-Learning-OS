@@ -1,5 +1,4 @@
 use std::sync::Arc;
-use rusqlite::Connection;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
@@ -49,11 +48,9 @@ impl QuestionGenerator {
 
     pub fn generate_for_card(
         &self,
-        _conn: &Connection,
         card: &Card,
         provider: &dyn AiProvider,
         model_id: &str,
-        _bypass_cache: bool,
     ) -> AppResult<GenerationResult> {
         let content_hash = Self::compute_hash(card, provider.provider_key(), model_id);
 

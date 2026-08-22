@@ -40,7 +40,8 @@ interface AiPracticeState {
 export const useAiPracticeStore = create<AiPracticeState>((set, get) => ({
   filterOptions: null,
   activeFilter: {
-    filter_type: 'deck',
+    filter_type: 'combined',
+    exclude_previously_practiced: true,
   },
   questionCount: 10,
   practiceStage: 'setup',
@@ -74,6 +75,12 @@ export const useAiPracticeStore = create<AiPracticeState>((set, get) => ({
 
   startSession: async () => {
     const { activeFilter, questionCount } = get();
+    const effectiveFilter: PracticeFilter = {
+      ...activeFilter,
+      filter_type: activeFilter.filter_type || 'combined',
+      exclude_previously_practiced: activeFilter.exclude_previously_practiced ?? true,
+    };
+
     set({
       isGenerating: true,
       practiceStage: 'generating',
@@ -84,7 +91,7 @@ export const useAiPracticeStore = create<AiPracticeState>((set, get) => ({
     });
 
     try {
-      const session = await aiPracticeApi.startSession(activeFilter, questionCount);
+      const session = await aiPracticeApi.startSession(effectiveFilter, questionCount);
       set({
         currentSession: session,
         practiceStage: 'quiz',

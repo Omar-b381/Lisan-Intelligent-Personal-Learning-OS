@@ -407,75 +407,160 @@ impl AiPracticeService {
         )?;
 
         let session_id = conn.last_insert_rowid();
+        let active_model = model_id.as_deref().unwrap_or("default");
         let bypass_cache = filter.bypass_cache.unwrap_or(false);
 
-        // 4. Generate questions for each card
-        let mut question_dtos = Vec::new();
-        let active_model = model_id.as_deref().unwrap_or("default");
+        // 4. Check cache first & generate questions concurrently in parallel for remaining cards
+        let mut question_results: Vec<Option<super::question_generator::GenerationResult>> = vec![None; target_cards.len()];
+        let mut cards_to_generate: Vec<(usize, Card)> = Vec::new();
 
-        for card in &target_cards {
-            let gen_result = self.question_gen.generate_for_card(
-                &conn,
-                card,
-                provider.as_ref(),
-                active_model,
-                bypass_cache,
-            )?;
+        if !bypass_cache {
+            for (idx, card) in target_cards.iter().enumerate() {
+                let content_hash = QuestionGenerator::compute_hash(card, provider.provider_key(), active_model);
+                if let Ok(cached) = conn.query_row(
+                    "SELECT q.question_text, q.option_a, q.option_b, q.option_c, q.option_d, q.correct_option, 
+                            q.explanation, q.grounded_sentence, q.source_citation, q.source_url, q.is_source_verified, 
+                            q.raw_model_response
+                     FROM ai_question_cache qc
+                     JOIN ai_practice_questions q ON qc.question_id = q.id
+                     WHERE qc.content_hash = ?1
+                     ORDER BY q.id DESC LIMIT 1",
+                    params![content_hash],
+                    |r| Ok(super::question_generator::GenerationResult {
+                        question_text: r.get(0)?,
+                        option_a: r.get(1)?,
+                        option_b: r.get(2)?,
+                        option_c: r.get(3)?,
+                        option_d: r.get(4)?,
+                        correct_option: r.get(5)?,
+                        explanation: r.get::<_, Option<String>>(6)?.unwrap_or_default(),
+                        grounded_sentence: r.get(7)?,
+                        source_citation: r.get(8)?,
+                        source_url: r.get(9)?,
+                        is_source_verified: r.get::<_, i32>(10)? != 0,
+                        raw_response: r.get::<_, Option<String>>(11)?.unwrap_or_default(),
+                        content_hash: content_hash.clone(),
+                    }),
+                ) {
+                    question_results[idx] = Some(cached);
+                } else {
+                    cards_to_generate.push((idx, card.clone()));
+                }
+            }
+        } else {
+            for (idx, card) in target_cards.iter().enumerate() {
+                cards_to_generate.push((idx, card.clone()));
+            }
+        }
 
-            // Insert into ai_practice_questions
-            conn.execute(
-                "INSERT INTO ai_practice_questions (
-                    session_id, card_id, question_text, option_a, option_b, option_c, option_d, 
-                    correct_option, explanation, grounded_sentence, source_citation, source_url, 
-                    is_source_verified, raw_model_response, created_at
-                ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15)",
-                params![
-                    session_id,
-                    card.id,
-                    gen_result.question_text,
-                    gen_result.option_a,
-                    gen_result.option_b,
-                    gen_result.option_c,
-                    gen_result.option_d,
-                    gen_result.correct_option,
-                    gen_result.explanation,
-                    gen_result.grounded_sentence,
-                    gen_result.source_citation,
-                    gen_result.source_url,
-                    if gen_result.is_source_verified { 1 } else { 0 },
-                    gen_result.raw_response,
-                    now
-                ],
-            )?;
-
-            let question_id = conn.last_insert_rowid();
-
-            // Save in cache
-            let _ = conn.execute(
-                "INSERT OR REPLACE INTO ai_question_cache (content_hash, question_id, created_at) VALUES (?1, ?2, ?3)",
-                params![gen_result.content_hash, question_id, now],
-            );
-
-            // Safe DTO for frontend — without correct_option!
-            question_dtos.push(PracticeQuestionDto {
-                id: question_id,
-                session_id,
-                card_id: card.id.clone(),
-                card_front: card.front.clone(),
-                card_back: card.back.clone(),
-                question_text: gen_result.question_text,
-                option_a: gen_result.option_a,
-                option_b: gen_result.option_b,
-                option_c: gen_result.option_c,
-                option_d: gen_result.option_d,
-                grounded_sentence: gen_result.grounded_sentence,
-                source_citation: gen_result.source_citation,
-                source_url: gen_result.source_url,
-                is_source_verified: gen_result.is_source_verified,
-                user_answer: None,
-                is_correct: None,
-                explanation: None,
+        // If there are uncached cards, generate them concurrently in parallel!
+        if !cards_to_generate.is_empty() {
+            let generated_items: Vec<(usize, AppResult<super::question_generator::GenerationResult>)> = std::thread::scope(|s| {
+                let mut handles = Vec::new();
+                for (idx, card) in cards_to_generate {
+                    let provider_ref = provider.as_ref();
+                    let question_gen = self.question_gen.clone();
+                    let model_str = active_model.to_string();
+                    handles.push(s.spawn(move || {
+                        let res = question_gen.generate_for_card(
+                            &card,
+                            provider_ref,
+                            &model_str,
+                        );
+                        (idx, res)
+                    }));
+                }
+                handles
+                    .into_iter()
+                    .map(|h| h.join().unwrap_or_else(|_| (0, Err(AppError::Internal("Thread panicked".to_string())))))
+                    .collect()
             });
+
+            for (idx, res) in generated_items {
+                match res {
+                    Ok(gen) => {
+                        question_results[idx] = Some(gen);
+                    }
+                    Err(e) => {
+                        let fallback = QuestionGenerator::generate_fallback_draft(&target_cards[idx], &None, "ar");
+                        question_results[idx] = Some(super::question_generator::GenerationResult {
+                            question_text: fallback.question,
+                            option_a: fallback.options.a,
+                            option_b: fallback.options.b,
+                            option_c: fallback.options.c,
+                            option_d: fallback.options.d,
+                            correct_option: fallback.correct_option,
+                            explanation: fallback.explanation,
+                            grounded_sentence: None,
+                            source_citation: None,
+                            source_url: None,
+                            is_source_verified: false,
+                            raw_response: format!("Fallback due to: {e}"),
+                            content_hash: QuestionGenerator::compute_hash(&target_cards[idx], provider.provider_key(), active_model),
+                        });
+                    }
+                }
+            }
+        }
+
+        // 5. Store questions in SQLite session and return Safe DTOs
+        let mut question_dtos = Vec::new();
+        for (idx, card) in target_cards.iter().enumerate() {
+            if let Some(gen_result) = &question_results[idx] {
+                conn.execute(
+                    "INSERT INTO ai_practice_questions (
+                        session_id, card_id, question_text, option_a, option_b, option_c, option_d, 
+                        correct_option, explanation, grounded_sentence, source_citation, source_url, 
+                        is_source_verified, raw_model_response, created_at
+                    ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15)",
+                    params![
+                        session_id,
+                        card.id,
+                        gen_result.question_text,
+                        gen_result.option_a,
+                        gen_result.option_b,
+                        gen_result.option_c,
+                        gen_result.option_d,
+                        gen_result.correct_option,
+                        gen_result.explanation,
+                        gen_result.grounded_sentence,
+                        gen_result.source_citation,
+                        gen_result.source_url,
+                        if gen_result.is_source_verified { 1 } else { 0 },
+                        gen_result.raw_response,
+                        now
+                    ],
+                )?;
+
+                let question_id = conn.last_insert_rowid();
+
+                // Cache in SQLite
+                let _ = conn.execute(
+                    "INSERT OR REPLACE INTO ai_question_cache (content_hash, question_id, created_at) VALUES (?1, ?2, ?3)",
+                    params![gen_result.content_hash, question_id, now],
+                );
+
+                // Safe DTO for frontend — without correct_option!
+                question_dtos.push(PracticeQuestionDto {
+                    id: question_id,
+                    session_id,
+                    card_id: card.id.clone(),
+                    card_front: card.front.clone(),
+                    card_back: card.back.clone(),
+                    question_text: gen_result.question_text.clone(),
+                    option_a: gen_result.option_a.clone(),
+                    option_b: gen_result.option_b.clone(),
+                    option_c: gen_result.option_c.clone(),
+                    option_d: gen_result.option_d.clone(),
+                    grounded_sentence: gen_result.grounded_sentence.clone(),
+                    source_citation: gen_result.source_citation.clone(),
+                    source_url: gen_result.source_url.clone(),
+                    is_source_verified: gen_result.is_source_verified,
+                    user_answer: None,
+                    is_correct: None,
+                    explanation: None,
+                });
+            }
         }
 
         Ok(PracticeSessionDto {
@@ -664,70 +749,94 @@ impl AiPracticeService {
     // ─────────────────────────────────────────────────────────────────────────
 
     fn resolve_filtered_cards(&self, conn: &Connection, filter: &PracticeFilter) -> AppResult<Vec<Card>> {
-        match filter.filter_type.as_str() {
-            "specific_cards" => {
-                let ids = filter.card_ids.as_deref().unwrap_or(&[]);
-                if ids.is_empty() {
-                    return Ok(vec![]);
+        let mut query = String::from(
+            "SELECT c.id, c.deck_id, c.card_type, c.front, c.back, c.notes, c.state, 
+                    c.stability, c.difficulty, c.reps, c.lapses, c.review_count, 
+                    c.last_review, c.next_review, c.interval_days, c.ease_factor, 
+                    c.suspended, c.buried, c.created_at, c.updated_at 
+             FROM cards c "
+        );
+
+        let mut conditions: Vec<String> = Vec::new();
+        let mut params_vec: Vec<Box<dyn rusqlite::ToSql>> = Vec::new();
+
+        // 1. Specific Card IDs
+        if let Some(card_ids) = &filter.card_ids {
+            if !card_ids.is_empty() {
+                let placeholders = card_ids.iter().map(|_| "?").collect::<Vec<_>>().join(",");
+                conditions.push(format!("c.id IN ({})", placeholders));
+                for id in card_ids {
+                    params_vec.push(Box::new(id.clone()));
                 }
-                let mut cards = Vec::new();
-                for id in ids {
-                    if let Ok(c) = CardRepository::get_by_id(conn, id) {
-                        cards.push(c);
-                    }
-                }
-                Ok(cards)
-            }
-            "deck" => {
-                let deck_id = filter.deck_id.as_deref().ok_or_else(|| AppError::Validation("Deck ID is required for deck filter".to_string()))?;
-                CardRepository::get_by_deck(conn, deck_id)
-            }
-            "tag" => {
-                let tag = filter.tag.as_deref().ok_or_else(|| AppError::Validation("Tag is required for tag filter".to_string()))?;
-                let mut stmt = conn.prepare(
-                    "SELECT c.id, c.deck_id, c.card_type, c.front, c.back, c.notes, c.state, 
-                            c.stability, c.difficulty, c.reps, c.lapses, c.review_count, 
-                            c.last_review, c.next_review, c.interval_days, c.ease_factor, 
-                            c.suspended, c.buried, c.created_at, c.updated_at 
-                     FROM cards c 
-                     JOIN card_tags ct ON c.id = ct.card_id 
-                     JOIN tags t ON ct.tag_id = t.id 
-                     WHERE t.name = ?1 
-                     ORDER BY c.created_at DESC",
-                )?;
-                let rows = stmt.query_map(params![tag.to_lowercase()], |r| CardRepository::row_to_card(conn, r))?;
-                let mut cards = Vec::new();
-                for r in rows {
-                    cards.push(r?);
-                }
-                Ok(cards)
-            }
-            "date_added" => {
-                let from = filter.date_from.as_deref().unwrap_or("1970-01-01");
-                let to = filter.date_to.as_deref().unwrap_or("2099-12-31");
-                let mut stmt = conn.prepare(
-                    "SELECT id, deck_id, card_type, front, back, notes, state, 
-                            stability, difficulty, reps, lapses, review_count, 
-                            last_review, next_review, interval_days, ease_factor, 
-                            suspended, buried, created_at, updated_at 
-                     FROM cards 
-                     WHERE date(created_at) >= date(?1) AND date(created_at) <= date(?2) 
-                     ORDER BY created_at DESC",
-                )?;
-                let rows = stmt.query_map(params![from, to], |r| CardRepository::row_to_card(conn, r))?;
-                let mut cards = Vec::new();
-                for r in rows {
-                    cards.push(r?);
-                }
-                Ok(cards)
-            }
-            "all_due" => {
-                CardRepository::get_all_due_cards(conn, 50)
-            }
-            _ => {
-                CardRepository::get_all_due_cards(conn, 30)
             }
         }
+
+        // 2. Deck Filter
+        if let Some(deck_id) = &filter.deck_id {
+            if !deck_id.trim().is_empty() && deck_id != "all" {
+                conditions.push("c.deck_id = ?".to_string());
+                params_vec.push(Box::new(deck_id.clone()));
+            }
+        }
+
+        // 3. Tag Filter
+        if let Some(tag) = &filter.tag {
+            if !tag.trim().is_empty() && tag != "all" {
+                conditions.push("c.id IN (SELECT ct.card_id FROM card_tags ct JOIN tags t ON ct.tag_id = t.id WHERE LOWER(t.name) = LOWER(?))".to_string());
+                params_vec.push(Box::new(tag.clone()));
+            }
+        }
+
+        // 4. Date Range Filter
+        if let Some(from) = &filter.date_from {
+            if !from.trim().is_empty() {
+                conditions.push("date(c.created_at) >= date(?)".to_string());
+                params_vec.push(Box::new(from.clone()));
+            }
+        }
+        if let Some(to) = &filter.date_to {
+            if !to.trim().is_empty() {
+                conditions.push("date(c.created_at) <= date(?)".to_string());
+                params_vec.push(Box::new(to.clone()));
+            }
+        }
+
+        // 5. Exclude Previously Practiced Cards ("وتحفظ في الذاكرة علشان ميعملش اسأله عليهم تاني")
+        if filter.exclude_previously_practiced.unwrap_or(false) {
+            conditions.push("c.id NOT IN (SELECT DISTINCT card_id FROM ai_practice_questions WHERE user_answer IS NOT NULL AND is_correct = 1)".to_string());
+        }
+
+        // 6. Due cards condition if filter_type is all_due
+        if filter.filter_type == "all_due" && filter.deck_id.is_none() && filter.tag.is_none() && filter.date_from.is_none() {
+            let now = Utc::now().to_rfc3339();
+            conditions.push("(c.next_review IS NULL OR c.next_review <= ? OR c.state = 0)".to_string());
+            params_vec.push(Box::new(now));
+        }
+
+        if !conditions.is_empty() {
+            query.push_str(" WHERE ");
+            query.push_str(&conditions.join(" AND "));
+        }
+
+        query.push_str(" ORDER BY c.created_at DESC LIMIT 500");
+
+        let mut stmt = conn.prepare(&query)?;
+        let rusqlite_params: Vec<&dyn rusqlite::ToSql> = params_vec.iter().map(|p| p.as_ref()).collect();
+        let rows = stmt.query_map(rusqlite_params.as_slice(), |r| CardRepository::row_to_card(conn, r))?;
+
+        let mut cards = Vec::new();
+        for r in rows {
+            cards.push(r?);
+        }
+
+        // If exclude_previously_practiced filtered out all cards, retry without exclusion so practice doesn't fail
+        if cards.is_empty() && filter.exclude_previously_practiced.unwrap_or(false) {
+            let mut fallback_filter = filter.clone();
+            fallback_filter.exclude_previously_practiced = Some(false);
+            return self.resolve_filtered_cards(conn, &fallback_filter);
+        }
+
+        Ok(cards)
     }
 
     fn get_provider_by_key(&self, conn: &Connection, provider_key: &str) -> AppResult<AiProviderDto> {

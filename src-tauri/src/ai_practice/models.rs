@@ -74,12 +74,13 @@ pub struct FilterOptionsDto {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PracticeFilter {
-    pub filter_type: String, // 'all_due' | 'deck' | 'tag' | 'specific_cards' | 'date_added'
+    pub filter_type: String, // 'all_due' | 'deck' | 'tag' | 'specific_cards' | 'date_added' | 'combined'
     pub card_ids: Option<Vec<String>>,
     pub deck_id: Option<String>,
     pub tag: Option<String>,
     pub date_from: Option<String>,
     pub date_to: Option<String>,
+    pub exclude_previously_practiced: Option<bool>,
     pub bypass_cache: Option<bool>,
 }
 

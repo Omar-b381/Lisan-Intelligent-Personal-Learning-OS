@@ -64,12 +64,13 @@ export interface FilterOptionsDto {
 }
 
 export interface PracticeFilter {
-  filter_type: 'all_due' | 'deck' | 'tag' | 'specific_cards' | 'date_added';
+  filter_type: 'all_due' | 'deck' | 'tag' | 'specific_cards' | 'date_added' | 'combined';
   card_ids?: string[];
   deck_id?: string;
   tag?: string;
   date_from?: string;
   date_to?: string;
+  exclude_previously_practiced?: boolean;
   bypass_cache?: boolean;
 }
 
