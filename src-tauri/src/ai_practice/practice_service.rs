@@ -500,7 +500,7 @@ impl AiPracticeService {
                         question_results[idx] = Some(gen);
                     }
                     Err(e) => {
-                        let fallback = QuestionGenerator::generate_fallback_draft(&target_cards[idx], &None, "ar");
+                        let fallback = QuestionGenerator::shuffle_draft(QuestionGenerator::generate_fallback_draft(&target_cards[idx], &None, "ar"));
                         question_results[idx] = Some(super::question_generator::GenerationResult {
                             question_text: fallback.question,
                             option_a: fallback.options.a,

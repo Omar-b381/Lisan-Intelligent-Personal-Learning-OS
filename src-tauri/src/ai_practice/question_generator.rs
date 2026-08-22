@@ -1,4 +1,6 @@
 use std::sync::Arc;
+use rand::seq::SliceRandom;
+use rand::thread_rng;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
@@ -50,24 +52,15 @@ impl QuestionGenerator {
         &self,
         card: &Card,
         provider: &dyn AiProvider,
-        model_id: &str,
+        active_model: &str,
     ) -> AppResult<GenerationResult> {
-        let content_hash = Self::compute_hash(card, provider.provider_key(), model_id);
+        let content_hash = Self::compute_hash(card, provider.provider_key(), active_model);
 
-        // Detect language from tags or card content
-        let language = card
-            .tags
-            .iter()
-            .find(|t| t.contains('-') || *t == "ar" || *t == "en")
-            .cloned()
-            .unwrap_or_else(|| {
-                // If front contains Arabic characters, use ar, otherwise en
-                if card.front.chars().any(|c| ('\u{0600}'..='\u{06FF}').contains(&c)) {
-                    "ar".to_string()
-                } else {
-                    "en".to_string()
-                }
-            });
+        let language = if card.front.chars().any(|c| ('\u{0600}'..='\u{06FF}').contains(&c)) {
+            "ar"
+        } else {
+            "en"
+        };
 
         // 1. Grounding search
         let term = card.front.replace("{{c1::", "").replace("}}", "").trim().to_string();
@@ -92,7 +85,7 @@ impl QuestionGenerator {
     "c": "الخيار الثالث",
     "d": "الخيار الرابع"
   },
-  "correct_option": "a",
+  "correct_option": "c",
   "explanation": "شرح مختصر لسبب صحة الإجابة ومعنى الكلمة",
   "used_grounded_sentence": true
 }
@@ -100,8 +93,9 @@ impl QuestionGenerator {
 قواعد صارمة:
 1. الإجابة الصحيحة يجب أن تطابق تماماً المعنى أو الكلمة المحددة في البطاقة (TARGET_TERM / TARGET_MEANING).
 2. الخيارات المموّهة الثلاثة يجب أن تكون معقولة من نفس الفئة اللغوية ولا تتطابق مع المعنى الصحيح.
-3. اكتب السؤال والخيارات بنفس لغة البطاقة (عربي أو إنجليزي).
-4. لا تضع أي نص خارج كائن الـ JSON."#;
+3. تنبيه حاسم: وزّع موضع الإجابة الصحيحة عشوائياً بين المفاتيح (a, b, c, d) ولا تجعلها دائماً في خيار محدد.
+4. اكتب السؤال والخيارات بنفس لغة البطاقة (عربي أو إنجليزي).
+5. لا تضع أي نص خارج كائن الـ JSON."#;
 
         let grounded_sentence_str = grounded.as_ref().map(|g| g.sentence.as_str()).unwrap_or("NONE");
 
@@ -121,7 +115,7 @@ impl QuestionGenerator {
         };
 
         // 3. Call AI Provider with fallback support
-        let (raw_response, parsed_draft) = match provider.generate_chat(&chat_req) {
+        let (raw_response, raw_draft) = match provider.generate_chat(&chat_req) {
             Ok(resp) => {
                 match Self::parse_draft(&resp.raw_text) {
                     Ok(draft) => (resp.raw_text, draft),
@@ -147,6 +141,9 @@ impl QuestionGenerator {
             }
         };
 
+        // Shuffle options uniformly across A, B, C, D so correct answer is varied
+        let parsed_draft = Self::shuffle_draft(raw_draft);
+
         // 4. Construct GenerationResult
         let is_verified = grounded.is_some();
         let (source_citation, source_url, grounded_sentence) = if let Some(g) = grounded {
@@ -170,6 +167,45 @@ impl QuestionGenerator {
             raw_response,
             content_hash,
         })
+    }
+
+    /// Randomly shuffle options A, B, C, D and re-map correct_option
+    pub fn shuffle_draft(mut draft: GeneratedQuestionDraft) -> GeneratedQuestionDraft {
+        let correct_key = draft.correct_option.trim().to_lowercase();
+        let correct_text = match correct_key.as_str() {
+            "b" => draft.options.b.clone(),
+            "c" => draft.options.c.clone(),
+            "d" => draft.options.d.clone(),
+            _ => draft.options.a.clone(),
+        };
+
+        let mut all_options = vec![
+            draft.options.a,
+            draft.options.b,
+            draft.options.c,
+            draft.options.d,
+        ];
+
+        let mut rng = thread_rng();
+        all_options.shuffle(&mut rng);
+
+        let keys = ["a", "b", "c", "d"];
+        let mut new_correct = "a";
+
+        for (i, opt_text) in all_options.iter().enumerate() {
+            if opt_text == &correct_text {
+                new_correct = keys[i];
+                break;
+            }
+        }
+
+        draft.options.a = all_options[0].clone();
+        draft.options.b = all_options[1].clone();
+        draft.options.c = all_options[2].clone();
+        draft.options.d = all_options[3].clone();
+        draft.correct_option = new_correct.to_string();
+
+        draft
     }
 
     /// Robust JSON extractor that finds JSON objects within raw model text

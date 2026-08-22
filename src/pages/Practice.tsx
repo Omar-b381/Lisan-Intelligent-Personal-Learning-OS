@@ -231,44 +231,34 @@ export const Practice: React.FC = () => {
           </div>
         </div>
 
-        {/* Card Target & Hint Banner (Answer Hidden Under Hint Button!) */}
-        <div className="p-4 bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/60 rounded-2xl space-y-3">
+        {/* Question Text Box with Clear Question TTS Reader & Hint Button (No Card Term Spoiler) */}
+        <div className="p-6 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl space-y-4 shadow-sm">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-emerald-600/10 text-emerald-600 flex items-center justify-center font-bold text-sm">
-                <BookOpen className="w-4 h-4" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-slate-400 font-semibold">
-                    {language === 'ar' ? 'الكلمة من رزمتك:' : 'Card Term:'}
-                  </span>
-                  <span className="font-bold text-sm text-slate-900 dark:text-slate-100">
-                    {currentQ.card_front}
-                  </span>
-                </div>
-              </div>
-            </div>
+            <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>{language === 'ar' ? 'سؤال الاختبار' : 'Practice Question'}</span>
+            </span>
 
             <div className="flex items-center gap-2">
-              {/* Pronounce Card Term */}
+              {/* TTS Audio button to read the actual Question text */}
               <button
                 type="button"
-                onClick={() => playPronunciation(currentQ.card_front)}
-                className="p-2 rounded-xl text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors"
-                title={language === 'ar' ? 'استماع لنطق الكلمة' : 'Pronounce Term'}
+                onClick={() => playPronunciation(currentQ.question_text)}
+                className="px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition-colors flex items-center gap-1.5 text-xs font-semibold cursor-pointer"
+                title={language === 'ar' ? 'قراءة السؤال صوتياً' : 'Listen to question'}
               >
-                <Volume2 className="w-4 h-4" />
+                <Volume2 className="w-4 h-4 text-emerald-600" />
+                <span>{language === 'ar' ? 'قراءة السؤال' : 'Read Question'}</span>
               </button>
 
               {/* Reveal Hint Button */}
               <button
                 type="button"
                 onClick={() => setIsHintRevealed(!isHintRevealed)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
                   isHintRevealed
                     ? 'bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-200 border border-amber-300 dark:border-amber-700'
-                    : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-100'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-200'
                 }`}
               >
                 <HelpCircle className="w-3.5 h-3.5 text-amber-500" />
@@ -285,42 +275,22 @@ export const Practice: React.FC = () => {
             </div>
           </div>
 
+          <p className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100 leading-relaxed">
+            {currentQ.question_text}
+          </p>
+
           {/* Hidden Hint Content */}
           {isHintRevealed && (
-            <div className="p-3 bg-amber-50/90 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800/80 rounded-xl text-xs text-amber-900 dark:text-amber-200 flex items-center gap-2 animate-fade-in">
+            <div className="p-3.5 bg-amber-50/90 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800/80 rounded-2xl text-xs text-amber-900 dark:text-amber-200 flex items-center gap-2.5 animate-fade-in">
               <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
               <span>
-                {language === 'ar' ? 'تلميح المعنى المحفوظ في بطاقتك:' : 'Saved Card Meaning:'}{' '}
+                {language === 'ar' ? 'تلميح المعنى من البطاقة:' : 'Card Meaning Hint:'}{' '}
                 <strong className="font-bold text-slate-900 dark:text-white underline decoration-amber-400">
                   {currentQ.card_back}
                 </strong>
               </span>
             </div>
           )}
-        </div>
-
-        {/* Question Text Box with Clear Question TTS Reader */}
-        <div className="p-6 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl space-y-3 shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
-              {language === 'ar' ? 'سؤال الاختبار' : 'Practice Question'}
-            </span>
-
-            {/* TTS Audio button to read the actual Question text */}
-            <button
-              type="button"
-              onClick={() => playPronunciation(currentQ.question_text)}
-              className="px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition-colors flex items-center gap-1.5 text-xs font-semibold cursor-pointer"
-              title={language === 'ar' ? 'قراءة السؤال صوتياً' : 'Listen to question'}
-            >
-              <Volume2 className="w-4 h-4 text-emerald-600" />
-              <span>{language === 'ar' ? 'قراءة السؤال' : 'Read Question'}</span>
-            </button>
-          </div>
-
-          <p className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100 leading-relaxed">
-            {currentQ.question_text}
-          </p>
         </div>
 
         {/* Options (A / B / C / D) */}
