@@ -7,6 +7,7 @@ use super::connection::Database;
 const MIGRATION_001: &str = include_str!("migrations/001_initial.sql");
 const MIGRATION_002: &str = include_str!("migrations/002_seed.sql");
 const MIGRATION_003: &str = include_str!("migrations/003_tts_audio.sql");
+const MIGRATION_004: &str = include_str!("migrations/004_ai_practice.sql");
 
 pub struct Migration {
     pub version: i32,
@@ -30,6 +31,11 @@ pub fn get_migrations() -> Vec<Migration> {
             version: 3,
             name: "003_tts_audio",
             sql: MIGRATION_003,
+        },
+        Migration {
+            version: 4,
+            name: "004_ai_practice",
+            sql: MIGRATION_004,
         },
     ]
 }
@@ -91,7 +97,7 @@ mod tests {
         let count: i64 = conn
             .query_row("SELECT COUNT(1) FROM schema_migrations", [], |r| r.get(0))
             .expect("Failed to count migrations");
-        assert_eq!(count, 2);
+        assert_eq!(count, 4);
 
         let card_count: i64 = conn
             .query_row("SELECT COUNT(1) FROM cards", [], |r| r.get(0))

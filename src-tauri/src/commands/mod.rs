@@ -14,6 +14,8 @@ use crate::errors::AppError;
 use crate::services::*;
 use crate::tts::models::*;
 
+pub use crate::ai_practice::commands::*;
+
 pub struct AppState {
     pub db: Database,
     pub study_service: Arc<StudyService>,
@@ -25,6 +27,7 @@ pub struct AppState {
     pub import_export_service: Arc<ImportExportService>,
     pub backup_service: Arc<BackupService>,
     pub tts_service: Arc<TtsService>,
+    pub ai_practice_service: Arc<crate::ai_practice::AiPracticeService>,
 }
 
 // ---------------- Decks Commands ----------------

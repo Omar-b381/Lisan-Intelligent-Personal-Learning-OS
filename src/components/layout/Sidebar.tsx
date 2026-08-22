@@ -20,6 +20,7 @@ export const Sidebar: React.FC = () => {
   const navItems: { id: NavTab; label: string; icon: React.ReactNode }[] = [
     { id: 'dashboard', label: t('navDashboard', language), icon: <LayoutDashboard className="w-5 h-5" /> },
     { id: 'study', label: t('navStudy', language), icon: <GraduationCap className="w-5 h-5" /> },
+    { id: 'practice', label: t('navPractice', language), icon: <Sparkles className="w-5 h-5 text-emerald-500" /> },
     { id: 'decks', label: t('navDecks', language), icon: <FolderTree className="w-5 h-5" /> },
     { id: 'browser', label: t('navBrowser', language), icon: <Search className="w-5 h-5" /> },
     { id: 'analytics', label: t('navAnalytics', language), icon: <BarChart3 className="w-5 h-5" /> },

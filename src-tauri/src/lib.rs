@@ -1,3 +1,4 @@
+pub mod ai_practice;
 pub mod commands;
 pub mod database;
 pub mod domain;
@@ -29,6 +30,7 @@ pub fn run() {
     let import_export_service = Arc::new(ImportExportService::new(db.clone()));
     let backup_service = Arc::new(BackupService::new(db.clone()).expect("Failed to initialize BackupService"));
     let tts_service = Arc::new(TtsService::new(db.clone(), media_service.clone()));
+    let ai_practice_service = Arc::new(ai_practice::AiPracticeService::new(db.clone()));
 
     let app_state = AppState {
         db,
@@ -41,6 +43,7 @@ pub fn run() {
         import_export_service,
         backup_service,
         tts_service,
+        ai_practice_service,
     };
 
     tauri::Builder::default()
@@ -107,7 +110,20 @@ pub fn run() {
             tts_generate_bulk,
             tts_get_bulk_progress,
             tts_cancel_bulk,
+            // AI Practice
+            ai_provider_save,
+            ai_provider_test,
+            ai_provider_list_models,
+            ai_provider_list,
+            ai_provider_set_active,
+            ai_provider_delete,
+            ai_practice_get_filter_options,
+            ai_practice_start_session,
+            ai_practice_submit_answer,
+            ai_practice_get_summary,
+            ai_practice_list_history,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Lisan desktop application");
 }
+

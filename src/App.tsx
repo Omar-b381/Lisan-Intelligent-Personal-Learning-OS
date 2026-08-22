@@ -16,6 +16,7 @@ import { Browser } from './pages/Browser';
 import { Analytics } from './pages/Analytics';
 import { PomodoroPage } from './pages/PomodoroPage';
 import { Settings } from './pages/Settings';
+import { Practice } from './pages/Practice';
 
 export const App: React.FC = () => {
   const { activeTab, theme, language, toastMessage, clearToast } = useAppStore();
@@ -34,6 +35,8 @@ export const App: React.FC = () => {
         return <Dashboard />;
       case 'study':
         return <Study />;
+      case 'practice':
+        return <Practice />;
       case 'decks':
         return <Decks />;
       case 'browser':
