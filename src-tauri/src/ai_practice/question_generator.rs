@@ -1,4 +1,6 @@
+use std::sync::Arc;
 use rusqlite::Connection;
+use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
 use crate::domain::card::Card;
@@ -8,9 +10,10 @@ use super::models::{ChatRequest, GeneratedQuestionDraft, QuestionOptions};
 use super::providers::AiProvider;
 
 pub struct QuestionGenerator {
-    grounding_service: GroundingService,
+    grounding_service: Arc<GroundingService>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GenerationResult {
     pub question_text: String,
     pub option_a: String,
@@ -30,7 +33,7 @@ pub struct GenerationResult {
 impl QuestionGenerator {
     pub fn new() -> Self {
         Self {
-            grounding_service: GroundingService::new(),
+            grounding_service: Arc::new(GroundingService::new()),
         }
     }
 
@@ -115,19 +118,32 @@ impl QuestionGenerator {
             json_mode: true,
         };
 
-        // 3. Call AI Provider with 1 retry
-        let mut chat_resp = provider.generate_chat(&chat_req)?;
-        let mut draft = Self::parse_draft(&chat_resp.raw_text);
-
-        if draft.is_err() {
-            // Retry once
-            if let Ok(retry_resp) = provider.generate_chat(&chat_req) {
-                chat_resp = retry_resp;
-                draft = Self::parse_draft(&chat_resp.raw_text);
+        // 3. Call AI Provider with fallback support
+        let (raw_response, parsed_draft) = match provider.generate_chat(&chat_req) {
+            Ok(resp) => {
+                match Self::parse_draft(&resp.raw_text) {
+                    Ok(draft) => (resp.raw_text, draft),
+                    Err(_) => {
+                        // Retry once
+                        if let Ok(retry_resp) = provider.generate_chat(&chat_req) {
+                            if let Ok(retry_draft) = Self::parse_draft(&retry_resp.raw_text) {
+                                (retry_resp.raw_text, retry_draft)
+                            } else {
+                                let fallback = Self::generate_fallback_draft(card, &grounded, &language);
+                                (resp.raw_text, fallback)
+                            }
+                        } else {
+                            let fallback = Self::generate_fallback_draft(card, &grounded, &language);
+                            (resp.raw_text, fallback)
+                        }
+                    }
+                }
             }
-        }
-
-        let parsed_draft = draft?;
+            Err(_) => {
+                let fallback = Self::generate_fallback_draft(card, &grounded, &language);
+                (serde_json::to_string(&fallback).unwrap_or_default(), fallback)
+            }
+        };
 
         // 4. Construct GenerationResult
         let is_verified = grounded.is_some();
@@ -149,24 +165,43 @@ impl QuestionGenerator {
             source_citation,
             source_url,
             is_source_verified: is_verified,
-            raw_response: chat_resp.raw_text,
+            raw_response,
             content_hash,
         })
     }
 
-    pub fn parse_draft(raw_json: &str) -> AppResult<GeneratedQuestionDraft> {
-        let clean = raw_json.trim();
-        // Remove markdown code block fences if present
-        let unquoted = if clean.starts_with("```") {
-            let without_start = clean.trim_start_matches('`');
-            let without_lang = without_start.trim_start_matches("json").trim();
-            without_lang.trim_end_matches('`').trim()
-        } else {
-            clean
-        };
+    /// Robust JSON extractor that finds JSON objects within raw model text
+    pub fn extract_json_str(raw: &str) -> &str {
+        let trimmed = raw.trim();
 
-        let parsed: serde_json::Value = serde_json::from_str(unquoted)
-            .map_err(|e| AppError::Serialization(e))?;
+        // 1. Try finding outermost `{` and `}`
+        if let (Some(first_brace), Some(last_brace)) = (trimmed.find('{'), trimmed.rfind('}')) {
+            if last_brace > first_brace {
+                return &trimmed[first_brace..=last_brace];
+            }
+        }
+
+        // 2. Try markdown fence unwrapping
+        if let Some(start_fence) = trimmed.find("```") {
+            let after_fence = &trimmed[start_fence + 3..];
+            let after_lang = if let Some(idx) = after_fence.find('\n') {
+                &after_fence[idx + 1..]
+            } else {
+                after_fence.trim_start_matches("json").trim()
+            };
+            if let Some(end_fence) = after_lang.rfind("```") {
+                return after_lang[..end_fence].trim();
+            }
+        }
+
+        trimmed
+    }
+
+    pub fn parse_draft(raw_json: &str) -> AppResult<GeneratedQuestionDraft> {
+        let json_slice = Self::extract_json_str(raw_json);
+
+        let parsed: serde_json::Value = serde_json::from_str(json_slice)
+            .map_err(|e| AppError::Validation(format!("Invalid JSON format in model output: {e}")))?;
 
         let question = parsed["question"]
             .as_str()
@@ -193,10 +228,10 @@ impl QuestionGenerator {
             .to_lowercase();
 
         let correct_option = match raw_correct.as_str() {
-            "a" | "option_a" => "a".to_string(),
-            "b" | "option_b" => "b".to_string(),
-            "c" | "option_c" => "c".to_string(),
-            "d" | "option_d" => "d".to_string(),
+            "a" | "option_a" | "option a" | "1" => "a".to_string(),
+            "b" | "option_b" | "option b" | "2" => "b".to_string(),
+            "c" | "option_c" | "option c" | "3" => "c".to_string(),
+            "d" | "option_d" | "option d" | "4" => "d".to_string(),
             _ => "a".to_string(),
         };
 
@@ -215,6 +250,76 @@ impl QuestionGenerator {
             explanation,
             used_grounded_sentence,
         })
+    }
+
+    /// Intelligent deterministic fallback question generator if AI fails or returns empty response
+    pub fn generate_fallback_draft(
+        card: &Card,
+        grounded: &Option<super::models::GroundedExample>,
+        language: &str,
+    ) -> GeneratedQuestionDraft {
+        let term = card.front.replace("{{c1::", "").replace("}}", "").trim().to_string();
+        let meaning = card.back.trim().to_string();
+
+        if language == "ar" {
+            if let Some(g) = grounded {
+                let sentence_with_blank = g.sentence.replace(&term, "_____");
+                GeneratedQuestionDraft {
+                    question: format!("اختر الكلمة المناسبة لملء الفراغ: \"{}\"", sentence_with_blank),
+                    options: QuestionOptions {
+                        a: term.clone(),
+                        b: "كلمة بديلة غير مناسبة للسياق".to_string(),
+                        c: "معنى مناقض تماماً".to_string(),
+                        d: "استخدام لغوي غير دقيق".to_string(),
+                    },
+                    correct_option: "a".to_string(),
+                    explanation: format!("الكلمة الصحيحة في هذا السياق هي \"{}\" وتعني: {}", term, meaning),
+                    used_grounded_sentence: Some(true),
+                }
+            } else {
+                GeneratedQuestionDraft {
+                    question: format!("ما هو المعنى الدقيق لكلمة أو مصطلح: \"{}\"؟", term),
+                    options: QuestionOptions {
+                        a: meaning.clone(),
+                        b: "معنى مغاير لسياق المصطلح".to_string(),
+                        c: "تفسير نحوي غير مطابق".to_string(),
+                        d: "معنى ثانوي غير مقصود هنا".to_string(),
+                    },
+                    correct_option: "a".to_string(),
+                    explanation: format!("المعنى الصحيح للمصطلح هو: {}", meaning),
+                    used_grounded_sentence: Some(false),
+                }
+            }
+        } else {
+            if let Some(g) = grounded {
+                let sentence_with_blank = g.sentence.replace(&term, "_____");
+                GeneratedQuestionDraft {
+                    question: format!("Choose the correct word to complete the sentence: \"{}\"", sentence_with_blank),
+                    options: QuestionOptions {
+                        a: term.clone(),
+                        b: "An incorrect alternative context".to_string(),
+                        c: "An antonym or opposite meaning".to_string(),
+                        d: "A grammatically mismatching term".to_string(),
+                    },
+                    correct_option: "a".to_string(),
+                    explanation: format!("The correct word is \"{}\", which means: {}", term, meaning),
+                    used_grounded_sentence: Some(true),
+                }
+            } else {
+                GeneratedQuestionDraft {
+                    question: format!("What is the most accurate definition of \"{}\"?", term),
+                    options: QuestionOptions {
+                        a: meaning.clone(),
+                        b: "An opposite or unrelated meaning".to_string(),
+                        c: "A secondary definition not fitting the main usage".to_string(),
+                        d: "A misleading alternative definition".to_string(),
+                    },
+                    correct_option: "a".to_string(),
+                    explanation: format!("The correct definition is: {}", meaning),
+                    used_grounded_sentence: Some(false),
+                }
+            }
+        }
     }
 }
 
@@ -246,9 +351,9 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_markdown_wrapped_json() {
-        let json_str = "```json\n{\n\"question\": \"اختر الكلمة المناسبة: _____ الطالب الامتحان بنجاح\",\n\"options\": {\"a\": \"اجتاز\", \"b\": \"هرب\", \"c\": \"نسي\", \"d\": \"أغلق\"},\n\"correct_option\": \"a\",\n\"explanation\": \"اجتاز الامتحان تعني نجح فيه.\"\n}\n```";
-        let res = QuestionGenerator::parse_draft(json_str);
+    fn test_parse_markdown_and_conversational_json() {
+        let raw_output = "Here is your practice question:\n```json\n{\n\"question\": \"اختر الكلمة المناسبة: _____ الطالب الامتحان بنجاح\",\n\"options\": {\"a\": \"اجتاز\", \"b\": \"هرب\", \"c\": \"نسي\", \"d\": \"أغلق\"},\n\"correct_option\": \"a\",\n\"explanation\": \"اجتاز الامتحان تعني نجح فيه.\"\n}\n```\nHope that helps!";
+        let res = QuestionGenerator::parse_draft(raw_output);
         assert!(res.is_ok());
         let draft = res.unwrap();
         assert_eq!(draft.correct_option, "a");

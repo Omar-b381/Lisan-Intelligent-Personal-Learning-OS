@@ -154,8 +154,12 @@ impl AiProvider for GroqProvider {
 
         match resp {
             Ok(r) => {
-                let j: serde_json::Value = r.into_json()
-                    .map_err(|e| AppError::Internal(format!("Failed to parse Groq JSON response: {}", e)))?;
+                let raw_body = r.into_string().unwrap_or_default();
+                if raw_body.trim().is_empty() {
+                    return Err(AppError::Internal("Received empty response from Groq API".to_string()));
+                }
+                let j: serde_json::Value = serde_json::from_str(&raw_body)
+                    .map_err(|e| AppError::Internal(format!("Failed to parse Groq JSON response: {e}")))?;
 
                 let content = j["choices"][0]["message"]["content"]
                     .as_str()

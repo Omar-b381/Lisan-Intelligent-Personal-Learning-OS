@@ -164,12 +164,16 @@ impl AiProvider for CustomOpenAiCompatibleProvider {
 
         match resp {
             Ok(r) => {
-                let j: serde_json::Value = r.into_json()
-                    .map_err(|e| AppError::Internal(format!("Failed to parse custom provider JSON: {}", e)))?;
+                let raw_body = r.into_string().unwrap_or_default();
+                if raw_body.trim().is_empty() {
+                    return Err(AppError::Internal("Received empty response from custom AI endpoint".to_string()));
+                }
+                let j: serde_json::Value = serde_json::from_str(&raw_body)
+                    .map_err(|e| AppError::Internal(format!("Failed to parse JSON response: {e}")))?;
 
                 let content = j["choices"][0]["message"]["content"]
                     .as_str()
-                    .ok_or_else(|| AppError::Internal("Missing message content in custom provider response".to_string()))?
+                    .ok_or_else(|| AppError::Internal("Missing content in custom provider response".to_string()))?
                     .to_string();
 
                 Ok(ChatResponse { raw_text: content })
