@@ -73,11 +73,19 @@ impl QuestionGenerator {
         let term = card.front.replace("{{c1::", "").replace("}}", "").trim().to_string();
         let grounded = self.grounding_service.find_grounded_example(&term, &language);
 
-        // 2. Build Prompt
-        let system_prompt = r#"أنت مولّد أسئلة اختيار من متعدد لتطبيق تعلّم لغوي. يجب أن ترجع JSON صِرف فقط، دون أي نص إضافي قبله أو بعده، مطابقاً تماماً لهذا المخطط:
+        // 2. Build Prompt focused strictly on user's deck card term & meaning
+        let system_prompt = r#"أنت معلم لغوي متخصص في توليد أسئلة اختيار من متعدد لاختبار الكلمات والمفردات المحفوظة في بطاقات المستخدم (Flashcards).
+يجب أن يختبر السؤال بدقة الكلمة الهدف (TARGET_TERM) ومطابقتها للمعنى المحدد في بطاقة المستخدم (TARGET_MEANING).
+لا تسأل عن كلمات أو مصطلحات خارجية غير موجودة في البطاقة.
 
+أنماط الأسئلة المعتمدة:
+1. سؤال يختبر المعنى الدقيق للكلمة TARGET_TERM (تكون الإجابة الصحيحة مطابقة لمعنى TARGET_MEANING).
+2. جملة تطبيقية مفيدة بها فراغ _____ ويكون الخيار الصحيح هو الكلمة TARGET_TERM.
+3. سؤال يطرح المعنى TARGET_MEANING ويسأل عن الكلمة المناسبة له من بين الخيارات.
+
+يجب أن ترجع JSON صِرف فقط، دون أي نص إضافي قبله أو بعده:
 {
-  "question": "نص السؤال",
+  "question": "نص السؤال الواضح والمباشر",
   "options": {
     "a": "الخيار الأول",
     "b": "الخيار الثاني",
@@ -85,33 +93,30 @@ impl QuestionGenerator {
     "d": "الخيار الرابع"
   },
   "correct_option": "a",
-  "explanation": "شرح مختصر لسبب صحة الإجابة (سطر أو سطرين)",
+  "explanation": "شرح مختصر لسبب صحة الإجابة ومعنى الكلمة",
   "used_grounded_sentence": true
 }
 
 قواعد صارمة:
-1. إن زُوِّدت بجملة حقيقية موسومة GROUNDED_SENTENCE أدناه، يجب أن يُبنى السؤال حولها مباشرة (مثال: احذف الكلمة الهدف واطلب اختيار الكلمة الصحيحة لملء الفراغ _____، أو اسأل عن المعنى الدقيق للكلمة في سياق هذه الجملة). لا تُغيّر الجملة ولا تخترع سياقاً بديلاً. اضبط "used_grounded_sentence": true.
-2. إن لم تُزوَّد بجملة حقيقية (كانت NONE)، يجوز لك تأليف سؤال ومثال واقعي معقول بنفسك، لكن اضبط "used_grounded_sentence": false ولا تدّعِ أبداً وجود مصدر خارجي غير موجود.
-3. الخيارات المموِّهة (الثلاثة الخاطئة) يجب أن تكون من نفس الفئة اللغوية، معقولة الظهور، وغير متداخلة المعنى مع الإجابة الصحيحة، بحيث لا يوجد أكثر من إجابة صحيحة واحدة محتملة.
-4. اكتب السؤال والخيارات بنفس لغة البطاقة (عربي أو إنجليزي) المحددة في TARGET_LANGUAGE.
-5. لا تُخرج أي نص خارج كائن الـ JSON."#;
+1. الإجابة الصحيحة يجب أن تطابق تماماً المعنى أو الكلمة المحددة في البطاقة (TARGET_TERM / TARGET_MEANING).
+2. الخيارات المموّهة الثلاثة يجب أن تكون معقولة من نفس الفئة اللغوية ولا تتطابق مع المعنى الصحيح.
+3. اكتب السؤال والخيارات بنفس لغة البطاقة (عربي أو إنجليزي).
+4. لا تضع أي نص خارج كائن الـ JSON."#;
 
         let grounded_sentence_str = grounded.as_ref().map(|g| g.sentence.as_str()).unwrap_or("NONE");
-        let grounded_source_str = grounded.as_ref().map(|g| g.source_name.as_str()).unwrap_or("NONE");
 
         let user_prompt = format!(
-            "TARGET_TERM: {}\nTARGET_MEANING: {}\nTARGET_LANGUAGE: {}\nGROUNDED_SENTENCE: {}\nGROUNDED_SOURCE: {}",
+            "TARGET_TERM: {}\nTARGET_MEANING: {}\nTARGET_LANGUAGE: {}\nEXAMPLE_CONTEXT: {}",
             term,
             card.back.trim(),
             language,
-            grounded_sentence_str,
-            grounded_source_str
+            grounded_sentence_str
         );
 
         let chat_req = ChatRequest {
             system_prompt: system_prompt.to_string(),
             user_prompt,
-            max_tokens: 650,
+            max_tokens: 500,
             json_mode: true,
         };
 
