@@ -40,7 +40,7 @@ interface AiPracticeState {
 export const useAiPracticeStore = create<AiPracticeState>((set, get) => ({
   filterOptions: null,
   activeFilter: {
-    filter_type: 'combined',
+    filter_type: 'deck',
     exclude_previously_practiced: true,
   },
   questionCount: 10,
@@ -77,7 +77,7 @@ export const useAiPracticeStore = create<AiPracticeState>((set, get) => ({
     const { activeFilter, questionCount } = get();
     const effectiveFilter: PracticeFilter = {
       ...activeFilter,
-      filter_type: activeFilter.filter_type || 'combined',
+      filter_type: activeFilter.filter_type || 'deck',
       exclude_previously_practiced: activeFilter.exclude_previously_practiced ?? true,
     };
 

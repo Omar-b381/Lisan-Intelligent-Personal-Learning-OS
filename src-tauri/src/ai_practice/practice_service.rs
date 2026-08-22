@@ -389,9 +389,27 @@ impl AiPracticeService {
         let max_q = (question_count as usize).clamp(1, 30).min(target_cards.len());
         target_cards.truncate(max_q);
 
-        // 3. Create Session in SQLite
+        // 3. Create Session in SQLite (safely map filter_type to satisfy SQLite CHECK constraint)
         let now = Utc::now().to_rfc3339();
         let payload_json = serde_json::to_string(&filter).unwrap_or_default();
+
+        let db_filter_type = match filter.filter_type.as_str() {
+            "all_due" => "all_due",
+            "tag" => "tag",
+            "date_added" => "date_added",
+            "specific_cards" => "specific_cards",
+            _ => {
+                if filter.date_from.is_some() || filter.date_to.is_some() {
+                    "date_added"
+                } else if filter.tag.is_some() {
+                    "tag"
+                } else if filter.card_ids.as_ref().map(|c| !c.is_empty()).unwrap_or(false) {
+                    "specific_cards"
+                } else {
+                    "deck"
+                }
+            }
+        };
 
         conn.execute(
             "INSERT INTO ai_practice_sessions (
@@ -399,7 +417,7 @@ impl AiPracticeService {
             ) VALUES (?1, ?2, ?3, ?4, 0, 'in_progress', ?5)",
             params![
                 provider_id,
-                filter.filter_type,
+                db_filter_type,
                 payload_json,
                 target_cards.len() as u32,
                 now
