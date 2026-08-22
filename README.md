@@ -139,10 +139,10 @@ flowchart TD
     end
 
     subgraph DB["SQLite Persistence Layer"]
-        T1[(ai_providers)]
-        T2[(ai_practice_sessions)]
-        T3[(ai_practice_questions)]
-        T4[(ai_question_cache)]
+        T1[("ai_providers")]
+        T2[("ai_practice_sessions")]
+        T3[("ai_practice_questions")]
+        T4[("ai_question_cache")]
     end
 
     SettingsAI & PracticeSetup & QuizView & SummaryView --> Cmds
@@ -150,7 +150,7 @@ flowchart TD
     Cmds --> QGen
     QGen --> Grounding
     Grounding --> Tatoeba & Dict
-    Grounding -->|جملة حقيقية موثقة + رابط المصدر| QGen
+    Grounding -->|"Verified Citation"| QGen
     QGen --> Cache --> T4
     QGen --> Router
     Router --> OpenAI & Claude & Gemini & DeepSeek & Groq & Custom
@@ -197,15 +197,15 @@ flowchart TD
     Commands --> CacheKey
     CacheKey --> SQLiteCache
     
-    SQLiteCache -->|Cache Hit| MediaVault
-    SQLiteCache -->|Cache Miss| Router
+    SQLiteCache -->|"Cache Hit"| MediaVault
+    SQLiteCache -->|"Cache Miss"| Router
     
     Router --> SystemTTS
     Router --> GoogleTTS
     Router --> ElevenLabs
     
     SystemTTS & GoogleTTS & ElevenLabs --> MediaVault
-    MediaVault -->|Base64 IPC Stream| Frontend
+    MediaVault -->|"Base64 IPC Stream"| Frontend
 ```
 
 ### مزودو الخدمة المدعومون (Supported Providers):
@@ -234,11 +234,12 @@ flowchart TD
 
 ```mermaid
 graph LR
-    UI[React 19 + TypeScript + Tailwind] -- "Tauri IPC (Commands)" --> Rust[Rust Backend Core]
-    Rust --> FSRS[FSRS Scheduler Engine]
-    Rust --> TTS[TTS & Audio Engine (ureq + SAPI)]
-    Rust --> Pomo[Monotonic Timer & XP Service]
-    Rust --> SQLite[(SQLite 3 + WAL + FTS5)]
+    UI["React 19 + TypeScript + Tailwind"] -- "Tauri IPC (Commands)" --> Rust["Rust Backend Core"]
+    Rust --> FSRS["FSRS Scheduler Engine"]
+    Rust --> AI["AI Practice & Grounding Engine"]
+    Rust --> TTS["TTS & Audio Engine (ureq + SAPI)"]
+    Rust --> Pomo["Monotonic Timer & XP Service"]
+    Rust --> SQLite[("SQLite 3 (WAL + FTS5)")]
 ```
 
 | الطبقة التقنية | التقنية المختارة | سبب الاختيار الهندسي (Rationale) |
