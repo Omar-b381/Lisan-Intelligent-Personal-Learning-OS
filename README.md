@@ -130,13 +130,13 @@ flowchart TD
         Tatoeba["Tatoeba API (CC BY Real Sentences)"]
         Dict["Free Dictionary API (Authoritative Examples)"]
         QGen["QuestionGenerator (Prompt Engineering + JSON Validator)"]
-        Cache[("Question Cache (SHA-256)")]
+        Cache[("Question Cache: SHA-256")]
         Router{"AiProvider Router"}
-        OpenAI["OpenAI (GPT-4o/mini)"]
-        Claude["Anthropic (Claude 3.5)"]
-        Gemini["Google Gemini (1.5/2.0)"]
-        DeepSeek["DeepSeek (V3/R1)"]
-        Groq["Groq (Llama 3.3)"]
+        OpenAI["OpenAI: GPT-4o / mini"]
+        Claude["Anthropic: Claude 3.5"]
+        Gemini["Google Gemini: 1.5 / 2.0"]
+        DeepSeek["DeepSeek: V3 / R1"]
+        Groq["Groq: Llama 3.3"]
         Custom["Custom / Ollama Local"]
     end
 
@@ -174,9 +174,9 @@ flowchart TD
 ```mermaid
 flowchart TD
     subgraph Frontend["React Frontend"]
-        CardViewer["CardViewer / Study Mode (Shortcut P)"]
+        CardViewer["CardViewer / Study Mode: Shortcut P"]
         AudioBtn["AudioButton Component"]
-        VoiceSelect["VoiceSelector (Instant Fallbacks)"]
+        VoiceSelect["VoiceSelector: Instant Fallbacks"]
         BulkGen["BulkAudioGenerator Modal"]
     end
 
@@ -186,13 +186,13 @@ flowchart TD
 
     subgraph Backend["Rust Backend (TtsService)"]
         CacheKey["Deterministic SHA-256 Hashing"]
-        SQLiteCache{{"SQLite Cache (tts_audio table)"}}
-        MediaVault[("Local Media Vault (media/)")]
+        SQLiteCache{{"SQLite Cache: tts_audio table"}}
+        MediaVault[("Local Media Vault: media/")]
         
         Router{"TtsProvider Router"}
-        SystemTTS["SystemTtsProvider (Native OS SAPI / Offline)"]
-        GoogleTTS["GoogleTtsProvider (Cloud WaveNet / Neural2)"]
-        ElevenLabs["ElevenLabsProvider (ureq Zero-Blocking Client)"]
+        SystemTTS["SystemTtsProvider: Native OS SAPI / Offline"]
+        GoogleTTS["GoogleTtsProvider: Cloud WaveNet / Neural2"]
+        ElevenLabs["ElevenLabsProvider: ureq Zero-Blocking Client"]
     end
 
     CardViewer & AudioBtn & VoiceSelect & BulkGen --> Commands
@@ -239,9 +239,9 @@ graph LR
     UI["React 19 + TypeScript + Tailwind"] -- "Tauri IPC (Commands)" --> Rust["Rust Backend Core"]
     Rust --> FSRS["FSRS Scheduler Engine"]
     Rust --> AI["AI Practice & Grounding Engine"]
-    Rust --> TTS["TTS & Audio Engine (ureq + SAPI)"]
+    Rust --> TTS["TTS & Audio Engine: ureq + SAPI"]
     Rust --> Pomo["Monotonic Timer & XP Service"]
-    Rust --> SQLite[("SQLite 3 (WAL + FTS5)")]
+    Rust --> SQLite[("SQLite 3: WAL + FTS5")]
 ```
 
 | الطبقة التقنية | التقنية المختارة | سبب الاختيار الهندسي (Rationale) |
