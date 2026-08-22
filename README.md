@@ -12,10 +12,10 @@
   <img src="https://img.shields.io/badge/Tauri-2.x-24C8D8.svg?style=for-the-badge&logo=tauri" alt="Tauri" />
   <img src="https://img.shields.io/badge/React-18/19-61DAFB.svg?style=for-the-badge&logo=react" alt="React" />
   <img src="https://img.shields.io/badge/TypeScript-5.x-3178C6.svg?style=for-the-badge&logo=typescript" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/AI%20Practice-Multi--Provider%20LLM-purple.svg?style=for-the-badge&logo=openai" alt="AI Practice" />
+  <img src="https://img.shields.io/badge/Grounding-Tatoeba%20%26%20Dictionary-success.svg?style=for-the-badge&logo=wikipedia" alt="Grounding" />
   <img src="https://img.shields.io/badge/ElevenLabs-Neural%20AI-purple.svg?style=for-the-badge&logo=elevenlabs" alt="ElevenLabs" />
   <img src="https://img.shields.io/badge/SQLite-WAL%20Mode-003B57.svg?style=for-the-badge&logo=sqlite" alt="SQLite" />
-  <img src="https://img.shields.io/badge/Audio-SHA--256%20TTS%20Cache-blueviolet.svg?style=for-the-badge&logo=soundcharts" alt="TTS" />
-  <img src="https://img.shields.io/badge/TailwindCSS-3.4-38B2AC.svg?style=for-the-badge&logo=tailwind-css" alt="Tailwind" />
   <img src="https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge" alt="License" />
 </p>
 
@@ -28,15 +28,16 @@
 1. [نظرة عامة على المشروع (Project Description)](#-نظرة-عامة-على-المشروع-project-description)
 2. [المشكلة التي يحلها التطبيق (Problem It Solves)](#-المشكلة-التي-يحلها-التطبيق-problem-it-solves)
 3. [الميزات والقدرات الرئيسية (Key Features)](#-الميزات-والقدرات-الرئيسية-key-features)
-4. [منظومة النطق الصوتي وتحويل النص لكلام (TTS Architecture)](#-منظومة-النطق-الصوتي-وتحويل-النص-لكلام-tts-architecture)
-5. [التقنيات المستخدمة وسبب اختيارها (Tech Stack & Rationale)](#-التقنيات-المستخدمة-وسبب-اختيارها-tech-stack--rationale)
-6. [الهندسة المعمارية والقرارات التقنية (The Process & Architecture)](#-الهندسة-المعمارية-والقرارات-التقنية-the-process--architecture)
-7. [دليل البدء والتشغيل (Getting Started)](#-دليل-البدء-والتشغيل-getting-started)
-8. [الطبقة السردية: الدافع، التحديات والحلول (Storytelling Layer)](#-الطبقة-السردية-الدافع-التحديات-والحلول-storytelling-layer)
-9. [النتائج والأثر الملموس (Outcomes & Impact)](#-النتائج-والأثر-الملموس-outcomes--impact)
-10. [القيود وخريطة الطريق المستقبلية (Limitations & Future Work)](#-القيود-وخريطة-الطريق-المستقبلية-limitations--future-work)
-11. [الجمهور المستهدف والاستخدام المقصود (Intended Use)](#-الجمهور-المستهدف-والاستخدام-المقصود-intended-use)
-12. [الحقوق والترخيص (Credits & License)](#-الحقوق-والترخيص-credits--license)
+4. [التدريب بالذكاء الاصطناعي والتأصيل الواقعي (AI Practice & Grounding Architecture)](#-التدريب-بالذكاء-الاصطناعي-والتأصيل-الواقعي-ai-practice--grounding-architecture)
+5. [منظومة النطق الصوتي وتحويل النص لكلام (TTS Architecture)](#-منظومة-النطق-الصوتي-وتحويل-النص-لكلام-tts-architecture)
+6. [التقنيات المستخدمة وسبب اختيارها (Tech Stack & Rationale)](#-التقنيات-المستخدمة-وسبب-اختيارها-tech-stack--rationale)
+7. [الهندسة المعمارية والقرارات التقنية (The Process & Architecture)](#-الهندسة-المعمارية-والقرارات-التقنية-the-process--architecture)
+8. [دليل البدء والتشغيل (Getting Started)](#-دليل-البدء-والتشغيل-getting-started)
+9. [الطبقة السردية: الدافع، التحديات والحلول (Storytelling Layer)](#-الطبقة-السردية-الدافع-التحديات-والحلول-storytelling-layer)
+10. [النتائج والأثر الملموس (Outcomes & Impact)](#-النتائج-والأثر-الملموس-outcomes--impact)
+11. [القيود وخريطة الطريق المستقبلية (Limitations & Future Work)](#-القيود-وخريطة-الطريق-المستقبلية-limitations--future-work)
+12. [الجمهور المستهدف والاستخدام المقصود (Intended Use)](#-الجمهور-المستهدف-والاستخدام-المقصود-intended-use)
+13. [الحقوق والترخيص (Credits & License)](#-الحقوق-والترخيص-credits--license)
 
 ---
 
@@ -67,7 +68,16 @@
 - حساب فترات المراجعة التقديرية مباشرة على أزرار التقييم الأربعة: **أعدها (`< 10m`)**، **صعبة (`1d`)**، **جيدة (`3d`)**، و**سهلة (`8d+`)**.
 - الانتقال الحتمي بين حالات البطاقة: `جديدة (New)`، `قيد التعلّم (Learning)`، `مراجعة (Review)`، `إعادة تعلّم (Relearning)`، و`معلّقة (Suspended)`.
 
-### 2. منظومة النطق الصوتي الفوري (Text-to-Speech & Pronunciation)
+### 2. التدريب الذكي بالذكاء الاصطناعي والتأصيل الواقعي (AI Practice & Grounding)
+- **اختبارات اختيار من متعدد (MCQ) فائقة الواقعية** مبنية على بطاقات ومفردات المستخدم الحقيقية.
+- **تأصيل واقعي حقيقي (Grounded Citations)**: يجلب النظام جملاً بشرية حقيقية مترجمة من قاعدة بيانات **Tatoeba** وقاموس **Free Dictionary API** قبل استدعاء النموذج اللغوي لضمان عدم اختلاق أمثلة وهمية.
+- **دعم أشهر نماذج ومزودي الذكاء الاصطناعي**: OpenAI (GPT-4o/mini, o3-mini)، Anthropic (Claude 3.5 Sonnet/Haiku)، Google Gemini (1.5/2.0 Flash)، DeepSeek (V3/R1)، و Groq (Llama 3.3).
+- **دعم المزودات المخصصة والمحلية (Custom / Local LLMs)**: ربط أي خادم متوافق مع OpenAI مثل **Ollama** محلياً أو **LM Studio** أو **OpenRouter**.
+- **فلترة متقدمة للبطاقات**: إمكانية التدريب على بطاقات محددة بالبحث، أو رزمة معينة، أو وسم محدد، أو **حسب تاريخ إضافة البطاقات (Date Added Range)**.
+- **أمان ومكافحة الغش**: حجب الإجابة الصحيحة `correct_option` في السيرفر وعدم إرسالها للواجهة إلا بعد الاختيار.
+- **كاش ذكي للأسئلة (SHA-256 Question Cache)** لتوفير استهلاك الـ API وتكاليف التوليد.
+
+### 3. منظومة النطق الصوتي الفوري (Text-to-Speech & Pronunciation)
 - استمع لنطق أي بطاقة، مصطلح، أو جملة فورياً.
 - دعم كامل لأحدث نماذج **ElevenLabs Generative AI** مع الأصوات الطبيعية المجانية المعتمدة (**Adam**, **Sarah**, **George**, **Daniel**, **Antoni**).
 - لوحة تشخيص وفحص الرصيد والحساب الحي (Live Account Quota & Permissions Diagnostic).
@@ -76,22 +86,82 @@
 - أداة **توليد أصوات الرزمة دفعة واحدة (Bulk Deck Audio Generator)** مع شريط تقدم مباشر وحساب تقديري للحجم.
 - تحكم دقيق في سرعة النطق (`0.5x`, `0.75x`, `0.9x`, `1.0x`, `1.25x`, `1.5x`) وطبقة الصوت.
 
-### 3. الأولوية الذكية لقائمة المراجعة (Intelligent Prioritization)
+### 4. الأولوية الذكية لقائمة المراجعة (Intelligent Prioritization)
 - ترتيب البطاقات ليس مجرد ترتيب زمني؛ بل يعتمد على معادلة ترجيحية تجمع بين: **نسبة التأخير عن الموعد**، **خطر النسيان ($1 - R$)**، **صعوبة البطاقة**، **معدل الإخفاق التاريخي**، و**أولوية الرزمة**.
 
-### 4. منظومة بومودورو المندمجة مع الاستذكار
+### 5. منظومة بومودورو المندمجة مع الاستذكار
 - تخصيص كامل لفترات التركيز (25 دقيقة)، والاستراحات القصيرة (5 دقائق)، والطويلة (15 دقيقة).
 - تسجيل إحصائيات الجلسة: (البطاقات المراجعة، دقة الاسترجاع، زمن الإجابة، ونقاط الخبرة المكتسبة XP).
 
-### 5. خريطة النشاط والتحليلات العميقة (Knowledge Heatmap & Analytics)
+### 6. خريطة النشاط والتحليلات العميقة (Knowledge Heatmap & Analytics)
 - خريطة نشاط سنوية (365 يوماً) على غرار GitHub Heatmap للتبديل بين عدد البطاقات ودقائق الدراسة.
 - رسوم بيانية تفاعلية لحجم المراجعات ومنحنى استقرار الذاكرة (Retention Trend).
 - قائمة كشف نقاط الضعف (Weak Cards Diagnostic) لتحديد البطاقات المتكررة الرسوب.
 
-### 6. محرر بطاقات غني ومعاينة النطق وملء الفراغات (Cloze Deletion)
+### 7. محرر بطاقات غني ومعاينة النطق وملء الفراغات (Cloze Deletion)
 - دعم البطاقات الأساسية (وجه / ظهر)، وبطاقات ملء الفراغات التلقائية بترميز `{{c1::النص}}`.
 - معاينة فورية للنطق الصوتي داخل نافذة إنشاء وتعديل البطاقة.
 - تنسيق النص الغني (Bold, Italic, Inline Code)، وإرفاق الوسوم والوسائط المتعددة.
+
+---
+
+## 🤖 التدريب بالذكاء الاصطناعي والتأصيل الواقعي (AI Practice & Grounding Architecture)
+
+تم تصميم معمارية التدريب بالذكاء الاصطناعي لتفصل بين جلب السياق الواقعي الحقيقي وتوليد الأسئلة بواسطة النماذج اللغوية:
+
+```mermaid
+flowchart TD
+    subgraph Frontend["React Frontend (UI/UX)"]
+        SettingsAI["AI Settings Tab (Preset & Custom Models)"]
+        PracticeSetup["Practice Filter Screen (Deck/Tag/Date/Cards)"]
+        QuizView["MCQ Quiz Screen (Instant Feedback & Citations)"]
+        SummaryView["Session Summary & Mistake Review Screen"]
+    end
+
+    subgraph IPC["Tauri 2.x IPC Layer (spawn_blocking)"]
+        Cmds["ai_provider_* / ai_practice_*"]
+    end
+
+    subgraph Backend["Rust Backend Core"]
+        ProviderSvc["AiPracticeService & Crypto Module"]
+        Grounding["GroundingService (Fallback Chain)"]
+        Tatoeba["Tatoeba API (CC BY Real Sentences)"]
+        Dict["Free Dictionary API (Authoritative Examples)"]
+        QGen["QuestionGenerator (Prompt Engineering + JSON Validator)"]
+        Cache[("Question Cache (SHA-256)")]
+        Router{"AiProvider Router"}
+        OpenAI["OpenAI (GPT-4o/mini)"]
+        Claude["Anthropic (Claude 3.5)"]
+        Gemini["Google Gemini (1.5/2.0)"]
+        DeepSeek["DeepSeek (V3/R1)"]
+        Groq["Groq (Llama 3.3)"]
+        Custom["Custom / Ollama Local"]
+    end
+
+    subgraph DB["SQLite Persistence Layer"]
+        T1[(ai_providers)]
+        T2[(ai_practice_sessions)]
+        T3[(ai_practice_questions)]
+        T4[(ai_question_cache)]
+    end
+
+    SettingsAI & PracticeSetup & QuizView & SummaryView --> Cmds
+    Cmds --> ProviderSvc --> T1
+    Cmds --> QGen
+    QGen --> Grounding
+    Grounding --> Tatoeba & Dict
+    Grounding -->|جملة حقيقية موثقة + رابط المصدر| QGen
+    QGen --> Cache --> T4
+    QGen --> Router
+    Router --> OpenAI & Claude & Gemini & DeepSeek & Groq & Custom
+    QGen --> T2 & T3
+```
+
+### مزايا معمارية الذكاء الاصطناعي:
+1. **تأصيل واقعي حقيقي (Grounded Citations)**: بدلاً من الاعتماد على اختلاق النماذج لأمثلة غير دقيقة، يقوم `GroundingService` بالبحث في قاعدة بيانات **Tatoeba** المفتوحة وقاموس **Free Dictionary** لجلب جملة بشرية معتمدة قبل استدعاء النموذج، وتضمين رابط المصدر مباشرة في السؤال.
+2. **أمان تام للمفاتيح (Encrypted Key Storage)**: تشفير كافة المفاتيح عبر خوارزمية تجزئة قائمة على Salt الجهاز في وحدة `crypto.rs` قبل الحفظ في SQLite.
+3. **تعدد المزودات المفتوح (Multi-Provider & Local LLMs)**: التبديل الفوري بين OpenAI و Anthropic و Google Gemini و DeepSeek و Groq، أو تشغيل خوادم محلية خاصة عبر **Ollama** مجاناً دون إرسال أي بيانات لخوادم خارجية.
+4. **منع الغش البرمجي (Zero Client-Side Leak)**: يتم التحقق من الإجابة حصرياً في Rust، ولا يتم إرسال `correct_option` للـ Frontend إلا بعد قيام المستخدم بالاختيار.
 
 ---
 
@@ -190,18 +260,20 @@ graph LR
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │ 1. Frontend Layer (React 19 + Zustand + Tailwind + i18n)    │
-│    - Views: Dashboard | Study | Decks | Browser | Analytics │
+│    - Views: Dashboard | Study | Practice | Decks | Browser  │
 │    - Audio: AudioButton, AudioPlayer, VoiceSelector, BulkGen│
+│    - AI: AiSettings, Practice Quiz View, Summary View       │
 └──────────────────────────────┬──────────────────────────────┘
                                 │ Typed Tauri IPC Invocations
 ┌──────────────────────────────▼──────────────────────────────┐
 │ 2. Tauri IPC Boundary & Command Handlers (Rust)             │
-│    - Commands: cards, decks, reviews, tts, pomodoro...      │
+│    - Commands: cards, decks, reviews, tts, ai_practice...   │
 └──────────────────────────────┬──────────────────────────────┘
                                 │
 ┌──────────────────────────────▼──────────────────────────────┐
 │ 3. Application Services & Domain Core                       │
 │    - StudyService (FSRS Math & Prioritizer)                 │
+│    - AiPracticeService & GroundingService (Tatoeba / Dict)  │
 │    - TtsService (System SAPI, Google Cloud, ElevenLabs)     │
 │    - MediaService (Media Vault & Base64 Streamer)           │
 │    - PomodoroService & AnalyticsService                     │
@@ -212,15 +284,16 @@ graph LR
 │ 4. Persistence Layer (rusqlite Repositories + Migrations)   │
 │    - SQLite 3 (WAL mode, Foreign Keys, Schema Migrations)   │
 │    - Poison-Resilient Mutex Locking Strategy                │
-│    - Migrations: 001_initial.sql, 002_seed, 003_tts_audio   │
+│    - Migrations: 001_initial, 002_seed, 003_tts, 004_ai     │
 └─────────────────────────────────────────────────────────────┘
 ```
 
 ### قرارات هندسية بارزة:
-1. **حظر وضع منطق العمليات (Business Logic) في React**: الواجهة مسؤولة فقط عن العرض والتفاعل، بينما تُنفذ كافة الحسابات الرياضية والتحقق وتوليد الصوت وتعديل البيانات حصرياً داخل Rust.
-2. **استخدام نظام الهجرات التلقائية المتسلسل (SQL Migrations)**: لا يتم تعديل أي جداول يدوياً؛ بل تُطبق ملفات `001_initial.sql` و`002_seed.sql` و`003_tts_audio.sql` داخل معاملات ذرية آمنة عند إقلاع التطبيق.
-3. **أمان مفاتيح الـ API (API Keys Security)**: لا يتم حفظ مفاتيح Google أو ElevenLabs في الذاكرة الأمامية لـ React أو في متغيرات عامة مكشوفة، بل تُشفر وتُخزن في جدول إعدادات SQLite الآمن.
-4. **مؤقت ذو مرجعية زمنية حقيقية (Monotonic Timestamps)**: مؤقت بومودورو يعتمد على فوارق الطوابع الزمنية وليس على دقة `setInterval` في جافاسكريبت، لضمان عدم تأخر المؤقت عند تصغير النافذة.
+1. **حظر وضع منطق العمليات (Business Logic) في React**: الواجهة مسؤولة فقط عن العرض والتفاعل، بينما تُنفذ كافة الحسابات الرياضية والتحقق وتوليد الصوت وتأصيل الأسئلة حصرياً داخل Rust.
+2. **استخدام نظام الهجرات التلقائية المتسلسل (SQL Migrations)**: لا يتم تعديل أي جداول يدوياً؛ بل تُطبق ملفات `001_initial.sql` و`002_seed.sql` و`003_tts_audio.sql` و`004_ai_practice.sql` داخل معاملات ذرية آمنة عند إقلاع التطبيق.
+3. **أمان مفاتيح الـ API (API Keys Security)**: تشفير مفاتيح كافة المزودين عبر Keystream Salted Hashing في Rust قبل حفظها في SQLite.
+4. **تأصيل مصادر الأسئلة (Source Grounding)**: ربط كل سؤال تم توليده بجملة بشرية مترجمة معتمدة (Tatoeba CC BY) لتجنب أخطاء التوليد اللغوي.
+5. **مؤقت ذو مرجعية زمنية حقيقية (Monotonic Timestamps)**: مؤقت بومودورو يعتمد على فوارق الطوابع الزمنية وليس على دقة `setInterval` في جافاسكريبت، لضمان عدم تأخر المؤقت عند تصغير النافذة.
 
 ---
 
