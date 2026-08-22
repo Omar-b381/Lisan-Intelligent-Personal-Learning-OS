@@ -107,10 +107,43 @@ export const AiSettings: React.FC = () => {
     loadProviders();
   }, []);
 
+  useEffect(() => {
+    providers.forEach((p) => {
+      if (p.model_id && !selectedModels[p.provider_key]) {
+        setSelectedModels((prev) => ({ ...prev, [p.provider_key]: p.model_id! }));
+      }
+    });
+  }, [providers]);
+
+  const handleModelChange = async (providerKey: string, newModel: string) => {
+    setSelectedModels((prev) => ({ ...prev, [providerKey]: newModel }));
+    const prov = providers.find((p) => p.provider_key === providerKey);
+    if (prov && (prov.has_key || prov.provider_type === 'custom')) {
+      try {
+        await saveProvider({
+          provider_key: providerKey,
+          display_name: prov.display_name,
+          provider_type: prov.provider_type,
+          base_url: prov.base_url,
+          model_id: newModel,
+          is_active: prov.is_active,
+          is_enabled: true,
+        });
+        showToast(
+          language === 'ar'
+            ? `تم حفظ النموذج: ${newModel}`
+            : `Model updated to: ${newModel}`
+        );
+      } catch (err: any) {
+        console.error('Failed to update model:', err);
+      }
+    }
+  };
+
   const handleSaveKey = async (providerKey: string, providerType: 'preset' | 'custom' = 'preset') => {
     const key = apiKeys[providerKey]?.trim() || '';
     const prov = providers.find((p) => p.provider_key === providerKey);
-    const model = selectedModels[providerKey] || prov?.model_id || undefined;
+    const model = selectedModels[providerKey] || prov?.model_id || PRESET_INFOS[providerKey]?.defaultModels[0] || undefined;
 
     setSavingKey(providerKey);
     try {
@@ -122,15 +155,15 @@ export const AiSettings: React.FC = () => {
         api_key: key.length > 0 ? key : undefined,
         model_id: model,
         is_enabled: true,
-        is_active: prov?.is_active || false,
+        is_active: prov?.is_active ?? true, // Default to activating when saving
       };
 
       const saved = await saveProvider(input);
       setApiKeys((prev) => ({ ...prev, [providerKey]: '' }));
       showToast(
         language === 'ar'
-          ? 'تم حفظ إعدادات المزود بنجاح!'
-          : 'AI Provider configuration saved successfully!'
+          ? 'تم حفظ إعدادات المزود وتفعيله بنجاح!'
+          : 'AI Provider saved and activated successfully!'
       );
 
       // Auto test after saving
@@ -223,6 +256,27 @@ export const AiSettings: React.FC = () => {
             {language === 'ar' ? 'إضافة مزود مخصص (Ollama / OpenRouter)' : 'Add Custom Provider'}
           </Button>
         </div>
+
+        {/* Currently Active Model Display */}
+        {providers.some((p) => p.is_active) && (
+          <div className="pt-2 border-t border-emerald-200/50 dark:border-emerald-800/50 flex items-center justify-between text-xs">
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-emerald-800 dark:text-emerald-300">
+                {language === 'ar' ? 'المزود النشط حالياً:' : 'Active AI Engine:'}
+              </span>
+              <span className="font-bold text-slate-900 dark:text-white">
+                {providers.find((p) => p.is_active)?.display_name}
+              </span>
+              <span className="px-2 py-0.5 rounded-md bg-emerald-600 text-white font-mono text-[11px]">
+                {providers.find((p) => p.is_active)?.model_id || 'default'}
+              </span>
+            </div>
+            <span className="text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
+              <CheckCircle className="w-3.5 h-3.5" />
+              <span>{language === 'ar' ? 'جاهز لتوليد الاختبارات' : 'Ready for Quizzes'}</span>
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Popular Preset Providers Section */}
@@ -350,8 +404,8 @@ export const AiSettings: React.FC = () => {
                   </div>
                   <select
                     value={selectedModels[key] || prov?.model_id || availableModels[0] || ''}
-                    onChange={(e) => setSelectedModels({ ...selectedModels, [key]: e.target.value })}
-                    className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-emerald-500 font-medium"
+                    onChange={(e) => handleModelChange(key, e.target.value)}
+                    className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-emerald-500 font-medium cursor-pointer"
                   >
                     {availableModels.map((m) => (
                       <option key={m} value={m}>

@@ -29,9 +29,33 @@ impl AiPracticeService {
     // Provider Management
     // ─────────────────────────────────────────────────────────────────────────
 
+    pub fn ensure_preset_providers(conn: &Connection) -> AppResult<()> {
+        let presets = [
+            ("openai", "OpenAI (GPT-4o / GPT-4o-mini)", "gpt-4o-mini"),
+            ("anthropic", "Anthropic Claude (Claude 3.5)", "claude-3-5-haiku-latest"),
+            ("google", "Google Gemini (1.5 Flash / 2.0)", "gemini-1.5-flash"),
+            ("deepseek", "DeepSeek (V3 / R1)", "deepseek-chat"),
+            ("groq", "Groq (Llama 3.3 70B)", "llama-3.3-70b-versatile"),
+        ];
+
+        for (key, name, default_model) in presets {
+            let _ = conn.execute(
+                "INSERT OR IGNORE INTO ai_providers (
+                    provider_key, display_name, provider_type, base_url, api_key_encrypted, 
+                    model_id, is_active, is_enabled, last_test_status
+                ) VALUES (?1, ?2, 'preset', NULL, '', ?3, 0, 1, 'untested')",
+                params![key, name, default_model],
+            );
+        }
+        Ok(())
+    }
+
     pub fn save_provider(&self, input: AiProviderInput) -> AppResult<AiProviderDto> {
         let conn = self.db.get_connection();
         let now = Utc::now().to_rfc3339();
+
+        // Ensure default presets exist
+        Self::ensure_preset_providers(&conn)?;
 
         let clean_key = input.api_key.as_deref().unwrap_or("").trim();
         let encrypted_key = if !clean_key.is_empty() {
@@ -48,13 +72,46 @@ impl AiPracticeService {
             existing_key.unwrap_or_default()
         };
 
-        let is_active = input.is_active.unwrap_or(false);
+        // Determine if should be active
+        let is_active = if let Some(active) = input.is_active {
+            active
+        } else {
+            // If there's currently no active provider, automatically activate if key is present
+            let active_count: i64 = conn.query_row(
+                "SELECT COUNT(1) FROM ai_providers WHERE is_active = 1",
+                [],
+                |r| r.get(0),
+            ).unwrap_or(0);
+            active_count == 0 && !encrypted_key.is_empty()
+        };
+
         let is_enabled = input.is_enabled.unwrap_or(true);
 
         if is_active {
             // Unset other active providers
             conn.execute("UPDATE ai_providers SET is_active = 0", [])?;
         }
+
+        // Determine model_id to save
+        let model_id_to_save = if input.model_id.as_deref().map(|s| !s.trim().is_empty()).unwrap_or(false) {
+            input.model_id
+        } else {
+            let existing_model: Option<String> = conn
+                .query_row(
+                    "SELECT model_id FROM ai_providers WHERE provider_key = ?1",
+                    params![input.provider_key],
+                    |r| r.get(0),
+                )
+                .ok();
+            existing_model.or_else(|| match input.provider_key.as_str() {
+                "google" => Some("gemini-1.5-flash".to_string()),
+                "openai" => Some("gpt-4o-mini".to_string()),
+                "anthropic" => Some("claude-3-5-haiku-latest".to_string()),
+                "deepseek" => Some("deepseek-chat".to_string()),
+                "groq" => Some("llama-3.3-70b-versatile".to_string()),
+                _ => None,
+            })
+        };
 
         conn.execute(
             "INSERT INTO ai_providers (
@@ -66,7 +123,7 @@ impl AiPracticeService {
                 provider_type = excluded.provider_type,
                 base_url = excluded.base_url,
                 api_key_encrypted = CASE WHEN excluded.api_key_encrypted != '' THEN excluded.api_key_encrypted ELSE ai_providers.api_key_encrypted END,
-                model_id = excluded.model_id,
+                model_id = CASE WHEN excluded.model_id IS NOT NULL AND excluded.model_id != '' THEN excluded.model_id ELSE ai_providers.model_id END,
                 is_active = excluded.is_active,
                 is_enabled = excluded.is_enabled,
                 updated_at = excluded.updated_at",
@@ -76,7 +133,7 @@ impl AiPracticeService {
                 input.provider_type,
                 input.base_url,
                 encrypted_key,
-                input.model_id,
+                model_id_to_save,
                 if is_active { 1 } else { 0 },
                 if is_enabled { 1 } else { 0 },
                 now
@@ -84,6 +141,25 @@ impl AiPracticeService {
         )?;
 
         self.get_provider_by_key(&conn, &input.provider_key)
+    }
+
+    pub fn list_providers(&self) -> AppResult<Vec<AiProviderDto>> {
+        let conn = self.db.get_connection();
+        Self::ensure_preset_providers(&conn)?;
+
+        let mut stmt = conn.prepare(
+            "SELECT id, provider_key, display_name, provider_type, base_url, model_id, 
+                    api_key_encrypted, is_active, is_enabled, last_test_status, last_test_at, created_at, updated_at 
+             FROM ai_providers 
+             ORDER BY provider_type ASC, id ASC",
+        )?;
+
+        let rows = stmt.query_map([], |r| Self::row_to_provider_dto(r))?;
+        let mut list = Vec::new();
+        for r in rows {
+            list.push(r?);
+        }
+        Ok(list)
     }
 
     pub fn test_provider(&self, provider_id: i64) -> AppResult<ProviderTestResult> {
@@ -145,23 +221,6 @@ impl AiPracticeService {
         )?;
 
         provider.list_models()
-    }
-
-    pub fn list_providers(&self) -> AppResult<Vec<AiProviderDto>> {
-        let conn = self.db.get_connection();
-        let mut stmt = conn.prepare(
-            "SELECT id, provider_key, display_name, provider_type, base_url, model_id, 
-                    api_key_encrypted, is_active, is_enabled, last_test_status, last_test_at, created_at, updated_at 
-             FROM ai_providers 
-             ORDER BY provider_type ASC, id ASC",
-        )?;
-
-        let rows = stmt.query_map([], |r| Self::row_to_provider_dto(r))?;
-        let mut list = Vec::new();
-        for r in rows {
-            list.push(r?);
-        }
-        Ok(list)
     }
 
     pub fn set_active_provider(&self, provider_id: i64) -> AppResult<()> {

@@ -15,7 +15,10 @@ impl GoogleGeminiProvider {
     }
 
     fn get_model(&self) -> &str {
-        self.model_id.as_deref().unwrap_or("gemini-1.5-flash")
+        self.model_id
+            .as_deref()
+            .unwrap_or("gemini-1.5-flash")
+            .trim_start_matches("models/")
     }
 }
 
