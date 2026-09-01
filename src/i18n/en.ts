@@ -184,4 +184,21 @@ export const en = {
   aiFilterByDate: 'By Date Added',
   aiFilterByCards: 'Specific Cards',
   aiQuestionCount: 'Number of Questions',
+
+  // Interactive Reading
+  navReading: 'Interactive Reading',
+  readingLibraryTitle: 'Interactive Reading Library',
+  readingLibrarySubtitle: 'Read stories in bite-sized passages, lookup words in context, and create Cloze flashcards',
+  readingImportBook: 'Import Book',
+  readingPassage: 'Passage',
+  readingOf: 'of',
+  readingListen: 'Listen to Passage',
+  readingPause: 'Pause',
+  readingAddToCloze: 'Add to Cloze Review',
+  readingContextualTranslation: 'Contextual Translation',
+  readingEnglishDefinition: 'English Definition',
+  readingSentenceContext: 'Sentence Context',
+  readingDrmError: 'This file is protected by Digital Rights Management (DRM) and cannot be imported. Please import DRM-free editions only.',
+  readingScannedPdfError: 'This file appears to be a scanned image without an extractable text layer.',
+  readingDeleteConfirm: 'Are you sure you want to delete this book?',
 };

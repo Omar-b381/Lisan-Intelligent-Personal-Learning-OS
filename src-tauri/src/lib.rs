@@ -3,6 +3,7 @@ pub mod commands;
 pub mod database;
 pub mod domain;
 pub mod errors;
+pub mod reading;
 pub mod scheduler;
 pub mod services;
 pub mod tts;
@@ -31,6 +32,7 @@ pub fn run() {
     let backup_service = Arc::new(BackupService::new(db.clone()).expect("Failed to initialize BackupService"));
     let tts_service = Arc::new(TtsService::new(db.clone(), media_service.clone()));
     let ai_practice_service = Arc::new(ai_practice::AiPracticeService::new(db.clone()));
+    let reading_service = Arc::new(reading::ReadingService::new(db.clone(), media_service.clone()));
 
     let app_state = AppState {
         db,
@@ -44,6 +46,7 @@ pub fn run() {
         backup_service,
         tts_service,
         ai_practice_service,
+        reading_service,
     };
 
     tauri::Builder::default()
@@ -122,6 +125,15 @@ pub fn run() {
             ai_practice_submit_answer,
             ai_practice_get_summary,
             ai_practice_list_history,
+            // Interactive Reading
+            reading_import_book,
+            reading_list_books,
+            reading_get_passage,
+            reading_lookup_word,
+            reading_add_word_to_review,
+            reading_synthesize_passage_audio,
+            reading_save_progress,
+            reading_delete_book,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Lisan desktop application");

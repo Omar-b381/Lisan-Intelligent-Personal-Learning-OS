@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { Language } from '../i18n';
 
-export type NavTab = 'dashboard' | 'study' | 'practice' | 'decks' | 'browser' | 'analytics' | 'pomodoro' | 'settings';
+export type NavTab = 'dashboard' | 'study' | 'practice' | 'reading' | 'decks' | 'browser' | 'analytics' | 'pomodoro' | 'settings';
 
 interface AppState {
   activeTab: NavTab;

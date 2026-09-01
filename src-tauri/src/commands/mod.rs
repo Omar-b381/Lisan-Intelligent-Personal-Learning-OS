@@ -15,6 +15,7 @@ use crate::services::*;
 use crate::tts::models::*;
 
 pub use crate::ai_practice::commands::*;
+pub use crate::reading::commands::*;
 
 pub struct AppState {
     pub db: Database,
@@ -28,6 +29,7 @@ pub struct AppState {
     pub backup_service: Arc<BackupService>,
     pub tts_service: Arc<TtsService>,
     pub ai_practice_service: Arc<crate::ai_practice::AiPracticeService>,
+    pub reading_service: Arc<crate::reading::ReadingService>,
 }
 
 // ---------------- Decks Commands ----------------
@@ -417,7 +419,7 @@ pub async fn tts_cancel_bulk(state: State<'_, AppState>, task_id: String) -> Res
     Ok(())
 }
 
-fn decode_base64(s: &str) -> Result<Vec<u8>, String> {
+pub fn decode_base64(s: &str) -> Result<Vec<u8>, String> {
     let s = s.trim();
     let mut table = [255u8; 256];
     const CHARSET: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";

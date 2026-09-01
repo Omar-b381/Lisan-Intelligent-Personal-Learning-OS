@@ -184,4 +184,21 @@ export const ar: typeof import('./en').en = {
   aiFilterByDate: 'حسب تاريخ الإضافة',
   aiFilterByCards: 'بطاقات محددة',
   aiQuestionCount: 'عدد الأسئلة',
+
+  // Interactive Reading
+  navReading: 'القراءة التفاعلية',
+  readingLibraryTitle: 'مكتبة القراءة التفاعلية',
+  readingLibrarySubtitle: 'اقرأ القصص والكتب مقسمة لمقاطع قصيرة، استكشف المعاني في سياقها، وأنشئ بطاقات Cloze فورية',
+  readingImportBook: 'استيراد كتاب',
+  readingPassage: 'المقطع',
+  readingOf: 'من',
+  readingListen: 'استمع للمقطع',
+  readingPause: 'إيقاف مؤقت',
+  readingAddToCloze: 'أضف للمراجعة (Cloze)',
+  readingContextualTranslation: 'الترجمة في السياق',
+  readingEnglishDefinition: 'التعريف الإنجليزي',
+  readingSentenceContext: 'سياق الجملة',
+  readingDrmError: 'هذا الملف محمي بحماية حقوق نشر (DRM) ولا يمكن استيراده. استورد فقط نسخاً غير محمية (كتب مجال عام، إصدارات DRM-free، أو محتوى من تأليفك).',
+  readingScannedPdfError: 'هذا الملف يبدو صوراً ممسوحة ضوئياً ولا يحتوي على طبقة نص رقمية صالحة للقراءة في هذا الإصدار.',
+  readingDeleteConfirm: 'هل أنت متأكد من رغبتك في حذف هذا الكتاب؟',
 };

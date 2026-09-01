@@ -8,6 +8,7 @@ import {
   Timer,
   Settings,
   Sparkles,
+  BookOpen,
 } from 'lucide-react';
 import { NavTab, useAppStore } from '../../stores/appStore';
 import { usePomodoroStore } from '../../stores/pomodoroStore';
@@ -21,6 +22,7 @@ export const Sidebar: React.FC = () => {
     { id: 'dashboard', label: t('navDashboard', language), icon: <LayoutDashboard className="w-5 h-5" /> },
     { id: 'study', label: t('navStudy', language), icon: <GraduationCap className="w-5 h-5" /> },
     { id: 'practice', label: t('navPractice', language), icon: <Sparkles className="w-5 h-5 text-emerald-500" /> },
+    { id: 'reading', label: t('navReading', language), icon: <BookOpen className="w-5 h-5 text-teal-600 dark:text-teal-400" /> },
     { id: 'decks', label: t('navDecks', language), icon: <FolderTree className="w-5 h-5" /> },
     { id: 'browser', label: t('navBrowser', language), icon: <Search className="w-5 h-5" /> },
     { id: 'analytics', label: t('navAnalytics', language), icon: <BarChart3 className="w-5 h-5" /> },

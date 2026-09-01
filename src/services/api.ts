@@ -32,6 +32,12 @@ import {
   BackupFileInfo,
   ImportPreview,
 } from '../types/settings';
+import {
+  Book,
+  Passage,
+  WordLookupResult,
+  AudioWithAlignment,
+} from '../types/reading';
 
 // Safe check if running inside Tauri desktop environment
 export const isTauri = (): boolean => {
@@ -338,4 +344,28 @@ export const api = {
   // Settings
   getAppSettings: () => callTauri<AppSettings>('get_app_settings'),
   saveAppSettings: (settings: AppSettings) => callTauri<void>('save_app_settings', { settings }),
+
+  // Interactive Reading
+  readingImportBook: (filePath: string, fileBytesBase64?: string) =>
+    callTauri<Book>('reading_import_book', { filePath, fileBytesBase64: fileBytesBase64 || null }),
+  readingListBooks: () => callTauri<Book[]>('reading_list_books'),
+  readingGetPassage: (bookId: number, passageIndex: number) =>
+    callTauri<Passage>('reading_get_passage', { bookId, passageIndex }),
+  readingSaveProgress: (bookId: number, passageIndex: number) =>
+    callTauri<void>('reading_save_progress', { bookId, passageIndex }),
+  readingLookupWord: (word: string, contextSentence: string) =>
+    callTauri<WordLookupResult>('reading_lookup_word', { word, contextSentence }),
+  readingAddWordToReview: (passageId: number, word: string, sentence: string) =>
+    callTauri<Card>('reading_add_word_to_review', { passageId, word, sentence }),
+  readingSynthesizePassageAudio: (
+    passageId: number,
+    preferredProvider?: string,
+    preferredVoice?: string
+  ) =>
+    callTauri<AudioWithAlignment>('reading_synthesize_passage_audio', {
+      passageId,
+      preferredProvider: preferredProvider || null,
+      preferredVoice: preferredVoice || null,
+    }),
+  readingDeleteBook: (bookId: number) => callTauri<void>('reading_delete_book', { bookId }),
 };
