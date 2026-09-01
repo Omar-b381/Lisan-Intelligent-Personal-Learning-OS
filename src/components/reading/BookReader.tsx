@@ -477,8 +477,8 @@ export const BookReader: React.FC = () => {
                     ? 'جاري الإنشاء...'
                     : 'Creating...'
                   : language === 'ar'
-                  ? '➕ أضف للمراجعة (Cloze)'
-                  : 'Add to Cloze Review'}
+                  ? '➕ أضف للمراجعة'
+                  : 'Add to Review'}
               </Button>
             </div>
           </div>

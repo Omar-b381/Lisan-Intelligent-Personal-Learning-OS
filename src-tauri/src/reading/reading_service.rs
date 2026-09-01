@@ -212,6 +212,28 @@ impl ReadingService {
             )?;
         }
 
+        // Ensure a dedicated deck exists for this book
+        let deck_exists: bool = tx.query_row(
+            "SELECT COUNT(1) FROM decks WHERE name = ?1",
+            params![parsed_book.title],
+            |r| r.get::<_, i64>(0),
+        ).map(|c| c > 0).unwrap_or(false);
+
+        if !deck_exists {
+            let new_deck_id = format!("deck-{}", Uuid::new_v4());
+            tx.execute(
+                "INSERT INTO decks (id, parent_id, name, description, color, icon, priority, created_at, updated_at)
+                 VALUES (?1, NULL, ?2, ?3, '#10b981', 'book-open', 1, ?4, ?5)",
+                params![
+                    new_deck_id,
+                    parsed_book.title,
+                    format!("كتاب / قصة: {}", parsed_book.title),
+                    now,
+                    now
+                ],
+            )?;
+        }
+
         tx.commit()?;
 
         Ok(BookDto {
@@ -335,27 +357,8 @@ impl ReadingService {
             return Err(AppError::Validation("Cannot create flashcard from empty word".to_string()));
         }
 
-        // 1. Create Cloze front by wrapping word with {{c1::word}}
-        let cloze_front = if sentence.contains(&clean_word) {
-            sentence.replacen(&clean_word, &format!("{{{{c1::{}}}}}", clean_word), 1)
-        } else if sentence.to_lowercase().contains(&clean_word.to_lowercase()) {
-            // Case-insensitive match replacement
-            let lower_sentence = sentence.to_lowercase();
-            let lower_word = clean_word.to_lowercase();
-            if let Some(idx) = lower_sentence.find(&lower_word) {
-                let matched_text = &sentence[idx..idx + clean_word.len()];
-                format!(
-                    "{}{{{{{{c1::{}}}}}}}{}",
-                    &sentence[..idx],
-                    matched_text,
-                    &sentence[idx + clean_word.len()..]
-                )
-            } else {
-                format!("{{{{c1::{}}}}} in context: {}", clean_word, sentence)
-            }
-        } else {
-            format!("{{{{c1::{}}}}} in context: {}", clean_word, sentence)
-        };
+        // 1. Target word for front of card
+        let front = clean_word.clone();
 
         // 2. Lookup definition and Arabic translation BEFORE acquiring database lock
         let lookup = self.lookup_word(&clean_word, sentence).unwrap_or_else(|_| WordLookupResult {
@@ -366,58 +369,66 @@ impl ReadingService {
             source: crate::reading::word_lookup::WordLookupSource::None,
         });
 
+        // 3. Build comprehensive Back content (Arabic translation, English definition, sentence context)
         let mut back_parts = Vec::new();
         if let Some(ar) = lookup.translation_ar {
-            back_parts.push(ar);
+            let clean_ar = ar.trim().to_string();
+            if !clean_ar.is_empty() {
+                back_parts.push(clean_ar);
+            }
         }
         if let Some(en) = lookup.definition_en {
-            back_parts.push(en);
+            let clean_en = en.trim().to_string();
+            if !clean_en.is_empty() {
+                back_parts.push(clean_en);
+            }
+        }
+        if !sentence.trim().is_empty() {
+            back_parts.push(format!("*\"{}\"*", sentence.trim()));
         }
         if back_parts.is_empty() {
             back_parts.push(clean_word.clone());
         }
         let back = back_parts.join("\n\n");
 
-        // 3. Acquire database connection for insertion
+        // 4. Acquire database connection for insertion
         let conn = self.db.get_connection();
 
-        let book_id: i64 = conn.query_row(
-            "SELECT book_id FROM passages WHERE id = ?1",
+        let (book_id, book_title): (i64, String) = conn.query_row(
+            "SELECT p.book_id, b.title 
+             FROM passages p 
+             JOIN books b ON p.book_id = b.id 
+             WHERE p.id = ?1",
             params![passage_id],
-            |r| r.get(0),
+            |r| Ok((r.get(0)?, r.get(1)?)),
         ).map_err(|_| AppError::NotFound(format!("Passage #{} not found", passage_id)))?;
 
-        // 4. Ensure a target deck exists (find or create "Reading & Stories" deck)
+        // 5. Ensure a target deck exists specifically named after the book title
         let deck_id: String = match conn.query_row(
-            "SELECT id FROM decks WHERE name = 'Reading & Stories' OR name = 'القراءة والقصص' LIMIT 1",
-            [],
+            "SELECT id FROM decks WHERE name = ?1 LIMIT 1",
+            params![book_title],
             |r| r.get(0),
         ) {
             Ok(id) => id,
             Err(_) => {
-                // If not found, use first existing deck or create a new dedicated reading deck
-                let first_deck: Option<String> = conn.query_row(
-                    "SELECT id FROM decks ORDER BY created_at ASC LIMIT 1",
-                    [],
-                    |r| r.get(0),
-                ).ok();
-
-                if let Some(f_id) = first_deck {
-                    f_id
-                } else {
-                    let new_deck_id = format!("deck-{}", Uuid::new_v4());
-                    let now = Utc::now().to_rfc3339();
-                    conn.execute(
-                        "INSERT INTO decks (id, parent_id, name, description, color, icon, priority, created_at, updated_at)
-                         VALUES (?1, NULL, 'Reading & Stories', 'Flashcards created from interactive reading', '#10b981', 'book-open', 1, ?2, ?3)",
-                        params![new_deck_id, now, now],
-                    )?;
-                    new_deck_id
-                }
+                let new_deck_id = format!("deck-{}", Uuid::new_v4());
+                let now = Utc::now().to_rfc3339();
+                conn.execute(
+                    "INSERT INTO decks (id, parent_id, name, description, color, icon, priority, created_at, updated_at)
+                     VALUES (?1, NULL, ?2, ?3, '#10b981', 'book-open', 1, ?4, ?5)",
+                    params![
+                        new_deck_id,
+                        book_title,
+                        format!("كتاب / قصة: {}", book_title),
+                        now,
+                        now
+                    ],
+                )?;
+                new_deck_id
             }
         };
 
-        // 5. Insert Card with source_book_id and source_passage_id
+        // 6. Insert Card as Basic Front/Back with source tracking
         let card_id = format!("card-{}", Uuid::new_v4());
         let now = Utc::now().to_rfc3339();
 
@@ -427,16 +438,16 @@ impl ReadingService {
                 reps, lapses, review_count, last_review, next_review, interval_days, ease_factor, 
                 suspended, buried, created_at, updated_at, source_book_id, source_passage_id
             ) VALUES (
-                ?1, ?2, 'cloze', ?3, ?4, ?5, 'new', 0.0, 0.0, 
+                ?1, ?2, 'basic', ?3, ?4, ?5, 'new', 0.0, 0.0, 
                 0, 0, 0, NULL, ?6, 0.0, 2.5, 
                 0, 0, ?7, ?8, ?9, ?10
             )",
             params![
                 card_id,
                 deck_id,
-                cloze_front,
+                front,
                 back,
-                format!("Imported from Interactive Reading (Book #{})", book_id),
+                format!("Book: {} | Sentence: {}", book_title, sentence),
                 now,
                 now,
                 now,
@@ -483,7 +494,7 @@ mod tests {
     use crate::domain::card::CardType;
 
     #[test]
-    fn test_create_cloze_card_from_reading() {
+    fn test_create_card_from_reading() {
         let db = Database::in_memory().expect("in-memory db");
         run_migrations(&db).expect("migrations");
 
@@ -501,8 +512,8 @@ mod tests {
             "The detective observed the clue carefully.",
         ).expect("create card");
 
-        assert_eq!(card.card_type, CardType::Cloze);
-        assert!(card.front.contains("{{c1::detective}}"));
+        assert_eq!(card.card_type, CardType::Basic);
+        assert_eq!(card.front, "detective");
         assert!(card.tags.contains(&"reading".to_string()));
     }
 }

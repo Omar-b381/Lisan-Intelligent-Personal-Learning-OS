@@ -134,8 +134,8 @@ export const BookLibrary: React.FC = () => {
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                 {language === 'ar'
-                  ? 'اقرأ قصصك وكتبك مقسمة لمقاطع ذكية، اضغط على أي كلمة لمعرفة معناها، وأضفها لبطاقات المراجعة (Cloze)'
-                  : 'Read stories segmented into bite-sized passages, lookup words in context, and add Cloze flashcards seamlessly.'}
+                  ? 'اقرأ قصصك وكتبك مقسمة لمقاطع ذكية، اضغط على أي كلمة لمعرفة معناها، وأضفها لبطاقات المراجعة في رزمة الكتاب'
+                  : 'Read stories segmented into bite-sized passages, lookup words in context, and add flashcards directly to your book deck.'}
               </p>
             </div>
           </div>

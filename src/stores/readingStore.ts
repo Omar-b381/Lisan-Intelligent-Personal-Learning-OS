@@ -236,10 +236,15 @@ export const useReadingStore = create<ReadingState>((set, get) => ({
         lookupSentenceText
       );
 
+      const activeBookTitle = get().activeBook?.title;
       showToast(
         language === 'ar'
-          ? `تمت إضافة «${lookupWordText}» بنجاح كبطاقة Cloze إلى طابور المراجعة!`
-          : `Added "${lookupWordText}" as a Cloze flashcard to your review queue!`
+          ? activeBookTitle
+            ? `تمت إضافة «${lookupWordText}» بنجاح إلى رزمة «${activeBookTitle}»!`
+            : `تمت إضافة «${lookupWordText}» بنجاح إلى بطاقات المراجعة!`
+          : activeBookTitle
+          ? `Added "${lookupWordText}" to deck "${activeBookTitle}"!`
+          : `Added "${lookupWordText}" to your review queue!`
       );
       closeLookup();
     } catch (err: any) {
