@@ -30,6 +30,7 @@ pub struct AppState {
     pub tts_service: Arc<TtsService>,
     pub ai_practice_service: Arc<crate::ai_practice::AiPracticeService>,
     pub reading_service: Arc<crate::reading::ReadingService>,
+    pub distractor_service: Arc<DistractorService>,
 }
 
 // ---------------- Decks Commands ----------------

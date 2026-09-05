@@ -5,6 +5,8 @@ use super::models::GroundedExample;
 use tatoeba::TatoebaGrounding;
 use free_dictionary::FreeDictionaryGrounding;
 
+use crate::database::connection::Database;
+
 pub trait GroundingSource: Send + Sync {
     fn find_example(&self, term: &str, lang: &str) -> Option<GroundedExample>;
 }
@@ -18,6 +20,13 @@ impl GroundingService {
     pub fn new() -> Self {
         Self {
             tatoeba: TatoebaGrounding::new(),
+            free_dict: FreeDictionaryGrounding::new(),
+        }
+    }
+
+    pub fn with_db(db: Database) -> Self {
+        Self {
+            tatoeba: TatoebaGrounding::with_db(db),
             free_dict: FreeDictionaryGrounding::new(),
         }
     }

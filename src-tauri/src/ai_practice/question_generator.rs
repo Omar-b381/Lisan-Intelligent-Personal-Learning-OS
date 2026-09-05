@@ -31,10 +31,18 @@ pub struct GenerationResult {
     pub content_hash: String,
 }
 
+use crate::database::connection::Database;
+
 impl QuestionGenerator {
     pub fn new() -> Self {
         Self {
             grounding_service: Arc::new(GroundingService::new()),
+        }
+    }
+
+    pub fn with_db(db: Database) -> Self {
+        Self {
+            grounding_service: Arc::new(GroundingService::with_db(db)),
         }
     }
 

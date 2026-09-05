@@ -70,6 +70,9 @@
 
 ### 2. التدريب الذكي بالذكاء الاصطناعي والتأصيل الواقعي (AI Practice & Grounding)
 - **اختبارات اختيار من متعدد (MCQ) مبنية بدقة على رزم وبطاقات المستخدم**: اختبار مباشر لمفردات ومعاني البطاقات المحفوظة داخل رزمك دون تشتيت بكلمات خارجية.
+- **محرك توليد المشتتات الذكية (Datamuse Semantic Distractor Generator)**: توليد خيارات مموهة ذكية ومعقولة سياقياً للأسئلة عبر واجهة Datamuse مع فلترة صارمة لمنع تصريفات الكلمة واشتقاقاتها (Substring rejection)، واستبعاد الفوارق الطولية الكبيرة، ومنع العبارات المركبة عشوائياً.
+- **تخزين مؤقت ذكي للمشتتات والأمثلة (30-Day SQLite Cache)**: جداول كاش محلية مخصصة (`distractor_cache` و `tatoeba_sentence_cache`) مع تحديث تلقائي حتمي لمنع تكرار طلبات الشبكة للكلمات المتشابهة.
+- **تأصيل واقعي عالي الموثوقية (Hardened Tatoeba Grounding)**: دمج مرن يدعم واجهة Tatoeba الحديثة مع الانتقال التلقائي للنسخة الاحتياطية وفحص دقيق للغة النصوص المسترجعة وضمان الجودة ومطابقة المصطلحات.
 - **توليد متوازي فائق السرعة (Parallel Multi-Threaded Generation)**: استغلال خيوط المعالجة المتعددة (`std::thread::scope` في Rust) لتوليد كافة أسئلة الجلسة بالتوازي في ثوانٍ معدودة (~2 ثانية) بدلاً من الانتظار التسلسلي الطويل.
 - **كاش ذكي فوري للأسئلة (Instant 0ms SHA-256 Cache)**: استرجاع الأسئلة المولدة مسبقاً من قاعدة بيانات SQLite في أقل من 1 ميلي ثانية لتوفير استهلاك الـ API والوقت.
 - **فلترة متعددة حرة (Combinable Multi-Filter Matrix)**: دمج حر للمجموعة (Deck)، وتاريخ الإضافة (اليوم، آخر 3 أيام، آخر أسبوع، أو تاريخ مخصص)، والوسم (Tag)، والبطاقات الفردية المحددة، مع تخصيص مرن لعدد الأسئلة.
@@ -121,13 +124,14 @@ flowchart TD
     end
 
     subgraph IPC["Tauri 2.x IPC Layer (spawn_blocking)"]
-        Cmds["ai_provider_* / ai_practice_*"]
+        Cmds["ai_provider_* / ai_practice_* / generate_distractors"]
     end
 
     subgraph Backend["Rust Backend Core"]
         ProviderSvc["AiPracticeService & Crypto Module"]
+        DistractorSvc["DistractorService (Datamuse + Fallback)"]
         Grounding["GroundingService (Fallback Chain)"]
-        Tatoeba["Tatoeba API (CC BY Real Sentences)"]
+        Tatoeba["Tatoeba API (Dual Endpoint & Quality Filter)"]
         Dict["Free Dictionary API (Authoritative Examples)"]
         QGen["QuestionGenerator (Prompt Engineering + JSON Validator)"]
         Cache[("Question Cache: SHA-256")]
@@ -145,13 +149,17 @@ flowchart TD
         T2[("ai_practice_sessions")]
         T3[("ai_practice_questions")]
         T4[("ai_question_cache")]
+        T5[("distractor_cache")]
+        T6[("tatoeba_sentence_cache")]
     end
 
     SettingsAI & PracticeSetup & QuizView & SummaryView --> Cmds
     Cmds --> ProviderSvc --> T1
+    Cmds --> DistractorSvc --> T5
     Cmds --> QGen
     QGen --> Grounding
     Grounding --> Tatoeba & Dict
+    Tatoeba <--> T6
     Grounding -->|"Verified Citation"| QGen
     QGen --> Cache --> T4
     QGen --> Router
@@ -161,9 +169,10 @@ flowchart TD
 
 ### مزايا معمارية الذكاء الاصطناعي:
 1. **تأصيل واقعي حقيقي (Grounded Citations)**: بدلاً من الاعتماد على اختلاق النماذج لأمثلة غير دقيقة، يقوم `GroundingService` بالبحث في قاعدة بيانات **Tatoeba** المفتوحة وقاموس **Free Dictionary** لجلب جملة بشرية معتمدة قبل استدعاء النموذج، وتضمين رابط المصدر مباشرة في السؤال.
-2. **أمان تام للمفاتيح (Encrypted Key Storage)**: تشفير كافة المفاتيح عبر خوارزمية تجزئة قائمة على Salt الجهاز في وحدة `crypto.rs` قبل الحفظ في SQLite.
-3. **تعدد المزودات المفتوح (Multi-Provider & Local LLMs)**: التبديل الفوري بين OpenAI و Anthropic و Google Gemini و DeepSeek و Groq، أو تشغيل خوادم محلية خاصة عبر **Ollama** مجاناً دون إرسال أي بيانات لخوادم خارجية.
-4. **منع الغش البرمجي (Zero Client-Side Leak)**: يتم التحقق من الإجابة حصرياً في Rust، ولا يتم إرسال `correct_option` للـ Frontend إلا بعد قيام المستخدم بالاختيار.
+2. **محرك المشتتات اللغوية (Datamuse Distractors)**: توليد مموهات ذكية من نفس الفئة اللغوية مع كاش محلي 30 يوماً وتراجع حتمي لضمان عدم توقف الاختبارات.
+3. **أمان تام للمفاتيح (Encrypted Key Storage)**: تشفير كافة المفاتيح عبر خوارزمية تجزئة قائمة على Salt الجهاز في وحدة `crypto.rs` قبل الحفظ في SQLite.
+4. **تعدد المزودات المفتوح (Multi-Provider & Local LLMs)**: التبديل الفوري بين OpenAI و Anthropic و Google Gemini و DeepSeek و Groq، أو تشغيل خوادم محلية خاصة عبر **Ollama** مجاناً دون إرسال أي بيانات لخوادم خارجية.
+5. **منع الغش البرمجي (Zero Client-Side Leak)**: يتم التحقق من الإجابة حصرياً في Rust، ولا يتم إرسال `correct_option` للـ Frontend إلا بعد قيام المستخدم بالاختيار.
 
 ---
 

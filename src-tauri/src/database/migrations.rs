@@ -9,6 +9,7 @@ const MIGRATION_002: &str = include_str!("migrations/002_seed.sql");
 const MIGRATION_003: &str = include_str!("migrations/003_tts_audio.sql");
 const MIGRATION_004: &str = include_str!("migrations/004_ai_practice.sql");
 const MIGRATION_005: &str = include_str!("migrations/005_reading.sql");
+const MIGRATION_006: &str = include_str!("migrations/006_distractor_cache.sql");
 
 pub struct Migration {
     pub version: i32,
@@ -42,6 +43,11 @@ pub fn get_migrations() -> Vec<Migration> {
             version: 5,
             name: "005_reading",
             sql: MIGRATION_005,
+        },
+        Migration {
+            version: 6,
+            name: "006_distractor_cache",
+            sql: MIGRATION_006,
         },
     ]
 }
@@ -103,7 +109,7 @@ mod tests {
         let count: i64 = conn
             .query_row("SELECT COUNT(1) FROM schema_migrations", [], |r| r.get(0))
             .expect("Failed to count migrations");
-        assert_eq!(count, 5);
+        assert_eq!(count, 6);
 
         let card_count: i64 = conn
             .query_row("SELECT COUNT(1) FROM cards", [], |r| r.get(0))

@@ -238,6 +238,9 @@ function getFallbackAiData<T>(cmd: string, args?: any): T {
     case 'ai_practice_list_history':
       return [] as unknown as T;
 
+    case 'generate_distractors':
+      return ['alternative context', 'opposite meaning', 'unrelated concept'] as unknown as T;
+
     default:
       return null as unknown as T;
   }
@@ -282,4 +285,7 @@ export const aiPracticeApi = {
 
   listHistory: (limit: number = 20) =>
     callAiTauri<PracticeSessionDto[]>('ai_practice_list_history', { limit }),
+
+  generateDistractors: (word: string, count: number = 3) =>
+    callAiTauri<string[]>('generate_distractors', { word, count }),
 };

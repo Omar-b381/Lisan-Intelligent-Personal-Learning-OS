@@ -20,8 +20,8 @@ pub struct AiPracticeService {
 impl AiPracticeService {
     pub fn new(db: Database) -> Self {
         Self {
-            db,
-            question_gen: Arc::new(QuestionGenerator::new()),
+            db: db.clone(),
+            question_gen: Arc::new(QuestionGenerator::with_db(db)),
         }
     }
 

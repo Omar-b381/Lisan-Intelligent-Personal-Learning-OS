@@ -33,6 +33,7 @@ pub fn run() {
     let tts_service = Arc::new(TtsService::new(db.clone(), media_service.clone()));
     let ai_practice_service = Arc::new(ai_practice::AiPracticeService::new(db.clone()));
     let reading_service = Arc::new(reading::ReadingService::new(db.clone(), media_service.clone()));
+    let distractor_service = Arc::new(DistractorService::new(db.clone()));
 
     let app_state = AppState {
         db,
@@ -47,6 +48,7 @@ pub fn run() {
         tts_service,
         ai_practice_service,
         reading_service,
+        distractor_service,
     };
 
     tauri::Builder::default()
@@ -125,6 +127,7 @@ pub fn run() {
             ai_practice_submit_answer,
             ai_practice_get_summary,
             ai_practice_list_history,
+            generate_distractors,
             // Interactive Reading
             reading_import_book,
             reading_list_books,

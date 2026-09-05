@@ -124,3 +124,18 @@ pub async fn ai_practice_list_history(
         .await
         .map_err(|e| AppError::Internal(format!("AI Practice thread join error: {}", e)))?
 }
+
+#[tauri::command]
+pub async fn generate_distractors(
+    state: State<'_, AppState>,
+    word: String,
+    count: u8,
+) -> Result<Vec<String>, String> {
+    let svc = state.distractor_service.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        Ok(svc.get_distractors(&word, count))
+    })
+    .await
+    .map_err(|e| format!("Distractor generation thread error: {}", e))?
+}
+

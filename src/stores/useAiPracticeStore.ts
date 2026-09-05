@@ -98,6 +98,18 @@ export const useAiPracticeStore = create<AiPracticeState>((set, get) => ({
         isGenerating: false,
         currentQuestionIndex: 0,
       });
+
+      // Prefetch distractors in background to warm cache without blocking quiz render
+      if (session?.questions) {
+        session.questions.forEach((q) => {
+          if (q.card_front) {
+            const cleanWord = q.card_front.replace(/\{\{c\d+::|\}\}/g, '').trim();
+            if (cleanWord) {
+              aiPracticeApi.generateDistractors(cleanWord, 3).catch(() => {});
+            }
+          }
+        });
+      }
     } catch (err: any) {
       console.error('Failed to start AI practice session:', err);
       set({ isGenerating: false, practiceStage: 'setup' });
